@@ -27,7 +27,8 @@ Skill: id = `repo:path`, name, description, commit, copies, in an agent folder (
   guessed from folder names, such as whether a skill is for users
 - **Copies**: skill directories with the same name, in agent folders inside the same folder
   (`.agents/skills/x`, `.claude/skills/x`), are *one skill*. Listed: the one in `.agents`,
-  else the first by path; the others are its copies
+  else the first by path; the others are its copies. Only the agent folder directly
+  above `skills/` or `skill/` determines this preference; an ancestor named `.agents` does not
 - The link pins the *scanned commit*
 - Malformed front matter → a *warning*, the scan goes on
 - Unreachable repository → a clear message, exit code 1

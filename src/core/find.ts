@@ -71,5 +71,5 @@ function copyKey(path: string): string | undefined {
 }
 
 function isShared(path: string): boolean {
-  return `/${path}`.includes(`/${SHARED}/`);
+  return path.split('/').at(-4) === SHARED;
 }
