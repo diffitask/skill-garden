@@ -18,7 +18,7 @@
   current code remain the watcher's responsibility.
 - Atomically reserve one active batch per PR before calling the webhook. Deduplicate
   feedback versions across batches, produce stable batch IDs independent of input
-  order, allow other PRs to proceed, and permit at most three batches per PR.
+  order, allow other PRs to proceed, and permit at most ten batches per PR.
 - When rechecking a reserved PR before dispatch, release the lock only if a
   successful GitHub read confirms that the PR closed or its head changed. Access,
   rate-limit, server, and transport errors propagate and retain the reservation for
@@ -59,6 +59,6 @@
   worker is allowed to write state, manage PR labels/comments, and push the existing
   PR branch. Instructions must be loaded from the trusted default branch, not PR code.
 - Integration tests cover initialization races, concurrent claims and worker starts,
-  conflicting updates, duplicate/edited feedback, multiple PRs, three-round limits,
+  conflicting updates, duplicate/edited feedback, multiple PRs, ten-round limits,
   stale/closed/foreign PRs, malformed input/state, permission and transport failures,
   fast workers, ownership checks, completion, and explicit recovery.

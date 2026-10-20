@@ -61,7 +61,7 @@ while a worker or delayed dispatch can still be active. Cancel/confirm they have
 stopped, then explicitly run `recover <file>` with repository, pr_number, original
 head_sha, batch_id, and `confirmed_stopped: true`. This marks the attempt blocked,
 preserves history/deduplication, and releases the lock. It does not retry the same
-feedback or reset the three-round limit. Requests for another attempt require a
+feedback or reset the ten-round limit. Requests for another attempt require a
 deliberate new feedback version, within the limit, or a reviewed future recovery
 change; never delete state to bypass limits. Manual recovery is not an automation
 action. Errors require inspection, not automatic write retries.

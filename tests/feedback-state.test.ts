@@ -149,13 +149,13 @@ test('duplicate webhook deliveries cannot start two workers; only the owner can 
   assert.equal((await client.dispatch(payload())).status, 'already_processed');
 });
 
-test('deduplicate feedback, recognize edits, ignore input ordering, and enforce three rounds', async () => {
+test('deduplicate feedback, recognize edits, ignore input ordering, and enforce ten rounds', async () => {
   const { client, api, deliveries } = await fixture();
   const first = await client.dispatch(payload(17, [2, 1, 1]));
   const parallel = await fixture();
   const reordered = await parallel.client.dispatch(payload(17, [1, 2]));
   assert.equal(first.batch_id, reordered.batch_id);
-  for (let round = 0; round < 3; round++) {
+  for (let round = 0; round < 10; round++) {
     if (round) {
       // An edit at the same timestamp must also form a new version.
       api.feedback.get('issues/comments/1').body += ' Updated finding.';
@@ -167,7 +167,7 @@ test('deduplicate feedback, recognize edits, ignore input ordering, and enforce 
     assert.equal((await client.dispatch(payload())).status, 'already_processed');
   }
   assert.equal((await client.dispatch(payload(17, [4]))).status, 'round_limit');
-  assert.equal((await client.status(17)).batches.length, 3);
+  assert.equal((await client.status(17)).batches.length, 10);
   assert.equal((await client.status(999)).active, null);
 });
 

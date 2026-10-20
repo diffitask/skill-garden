@@ -33,7 +33,7 @@ push occurred; do not use commit author dates as proof of push time. If relevanc
 or intent is uncertain, do not dispatch and report only items requiring attention.
 
 Use state to omit feedback versions already attempted, locked PRs, and PRs at the
-three-round limit. Do not clear locks, run `recover`, or retry blocked/uncertain
+ten-round limit. Do not clear locks, run `recover`, or retry blocked/uncertain
 batches automatically. Locks do not expire. A changed comment is a new version;
 the helper fetches original text and timestamps to calculate its version hash.
 

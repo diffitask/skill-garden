@@ -3,6 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
+export const MAX_BATCHES = 10;
 const branch = 'air/feedback-state';
 const hash = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const sha = (value) => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
@@ -18,7 +19,7 @@ function validateState(state) {
     throw new Error('Invalid or unsupported feedback state; refusing to reset it');
   }
   for (const [number, pr] of Object.entries(state.prs)) {
-    if (!/^[1-9]\d*$/.test(number) || !Array.isArray(pr.batches) || pr.batches.length > 3) throw new Error('Invalid PR state');
+    if (!/^[1-9]\d*$/.test(number) || !Array.isArray(pr.batches) || pr.batches.length > MAX_BATCHES) throw new Error('Invalid PR state');
     for (const batch of pr.batches) {
       if (!/^[a-f0-9]{64}$/.test(batch.id) || !sha(batch.head_sha) ||
           ![...activeStates, ...terminalStates].includes(batch.status) ||
@@ -173,7 +174,7 @@ export function createCoordinator({ repository, request, sendWebhook, now = () =
         const seen = new Set(pr.batches.flatMap((b) => b.feedback.map((f) => f.version)));
         const fresh = feedback.filter((f) => !seen.has(f.version));
         if (!fresh.length) return { value: { status: 'already_processed' } };
-        if (pr.batches.length >= 3) return { value: { status: 'round_limit' } };
+        if (pr.batches.length >= MAX_BATCHES) return { value: { status: 'round_limit' } };
         const id = hash([repository, payload.pr_number, payload.head_sha, fresh.map((f) => f.version)]);
         const batch = { id, head_sha: payload.head_sha, feedback: fresh, status: 'dispatching', created_at: now() };
         pr.batches.push(batch);
