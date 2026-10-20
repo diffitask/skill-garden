@@ -2,6 +2,10 @@
 `./skill-atlas scan <GitHub URL | directory>`
 Prints the result **at once**; *nothing is stored*.
 `GITHUB_TOKEN`, optional: a higher GitHub rate limit.
+## Web view
+`./skill-atlas web` starts the local server described in [web.md](web.md).
+`./skill-atlas help` lists this command.
+
 ## Version
 `./skill-atlas --version` prints the version from the installed `package.json`, followed
 by a newline, and exits with code 0. It works from any working directory without

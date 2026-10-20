@@ -12,6 +12,9 @@ if (args.length === 1 && args[0] === '--version') {
   const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
   console.log(version);
   process.exitCode = 0;
+} else if (args.length === 1 && args[0] === 'web') {
+  const { startWebServer } = await import('./server.ts');
+  startWebServer();
 } else {
   const token = process.env.GITHUB_TOKEN || undefined;
   process.exitCode = await run(args, {

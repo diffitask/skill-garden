@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
+import type { AddressInfo } from 'node:net';
 import { AtlasError } from './core/errors.ts';
 import { openGitHub, parseGitHubUrl } from './core/github.ts';
 import { skillLink } from './core/model.ts';
@@ -56,7 +57,29 @@ export function createWebServer(options: Options = {}) {
   });
 }
 
+/** Shared entry point for npm start and skill-atlas web. */
+export function startWebServer() {
+  const configuredPort = process.env.PORT ?? '3000';
+  if (!/^\d+$/.test(configuredPort) || Number(configuredPort) > 65535) {
+    console.error('PORT must be an integer between 0 and 65535.');
+    process.exitCode = 1;
+    return;
+  }
+  const port = Number(configuredPort);
+  const server = createWebServer();
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    console.error(error.code === 'EADDRINUSE'
+      ? `Port ${port} is already in use. Stop the other server or set PORT to another port.`
+      : `Unable to start Skill Atlas: ${error.message}`);
+    process.exitCode = 1;
+  });
+  server.listen(port, '127.0.0.1', () => {
+    console.log(`Skill Atlas: http://localhost:${(server.address() as AddressInfo).port}`);
+    console.log('Keep this process running; press Ctrl+C to stop.');
+  });
+  return server;
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const port = Number(process.env.PORT ?? 3000);
-  createWebServer().listen(port, '127.0.0.1', () => console.log(`Skill Atlas: http://127.0.0.1:${port}`));
+  startWebServer();
 }

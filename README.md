@@ -19,15 +19,22 @@ Set `GITHUB_TOKEN` for a higher GitHub rate limit. `npm test` runs the tests.
 - [spec/](spec/): what it does. [AGENTS.md](AGENTS.md): the definition of done.
 - [fixture/](fixture/README.md): a small repository for the tests.
 
-To browse skills locally, run `npm start` and open http://127.0.0.1:3000.
+## Web view on localhost
+
+```sh
+npm ci
+npm start
+# Alternatively: ./skill-atlas web
+```
+
+Open [localhost:3000](http://localhost:3000). Keep the server running and reuse
+this address whenever you want to browse skills; there is no HTML file to download.
 Enter a GitHub repository URL, then select a skill to read its full SKILL.md.
-Set `PORT` to change the port, and optionally `GITHUB_TOKEN` for private repositories or higher API limits.
+Press Ctrl+C in the terminal to stop the server.
 
-For a version that needs no server or port setup, open **skill-atlas.html** directly
-in your browser. It browses public repositories and needs an internet connection.
-Regenerate the file with `npm run build:web` after changing the UI or scanner.
+Set `PORT` to change the port (for example, `PORT=3001 npm start`), and optionally
+`GITHUB_TOKEN` for private repositories or higher API limits. The token stays on
+the server. If the port is already in use, stop the other server or choose another port.
 
-If GitHub reports a request limit in the portable page, paste a personal access token
-into the **GitHub token (optional)** field below the repository URL, then click **Try again**. The token is sent only to
-GitHub and kept in the current tab; it is never saved. You can also wait for
-GitHub's limit to reset and retry without a token.
+The portable HTML export remains available as an optional alternative through
+`npm run build:web`. Regenerate it after changing the UI or scanner.
