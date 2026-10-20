@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skill Atlas · Repository explorer</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header><a class="brand" href="/">✳ <span>Skill Atlas</span></a><span class="badge">LOCAL EXPLORER</span></header>
+  <main>
+    <section class="intro"><span class="eyebrow">A MAP OF WHAT YOUR AGENT CAN DO</span><h1>Explore a repository’s skills.</h1><p>One repository. Every skill. The instructions behind them.</p></section>
+    <form id="repository-form">
+      <label for="repository">GitHub repository</label>
+      <div class="input-row"><input id="repository" name="repository" type="text" placeholder="https://github.com/owner/repository" required autocomplete="url" spellcheck="false"><button id="scan" type="submit">Explore repository <span aria-hidden="true">↗</span></button></div>
+      <p class="hint">Finds SKILL.md files on the default branch. Set GITHUB_TOKEN when starting the server for private repositories or higher limits.</p>
+    </form>
+    <p id="status" role="status" aria-live="polite">Enter a repository link to get started.</p>
+    <div id="warnings" role="status" hidden></div>
+    <section id="results" hidden aria-label="Repository skills">
+      <div class="results-heading"><h2 id="repo-name"></h2><span id="count" class="badge"></span></div>
+      <div class="workspace"><nav id="skills" aria-label="Skills"></nav><article id="detail"><div class="document-heading"><div><span class="eyebrow">SKILL DOCUMENT</span><h2 id="skill-name"></h2></div><a id="source" target="_blank" rel="noopener noreferrer">View on GitHub ↗</a></div><p id="description"></p><p id="path"></p><pre id="content" tabindex="0" aria-label="SKILL.md contents"></pre></article></div>
+    </section>
+    <section id="empty" class="empty"><span class="empty-icon" aria-hidden="true">⌘</span><h2 id="empty-title">Every skill has a story.</h2><p id="empty-message">Explore a repository to read its agent instructions, all in one place.</p></section>
+  </main>
+  <footer><span>Skill Atlas</span><span>Read the skills. Understand the agent.</span></footer>
+</body>
+</html>
