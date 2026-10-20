@@ -5,7 +5,10 @@ import type { Source } from './scan.ts';
 /** The part of `fetch` the core uses, so tests and the browser can pass their own. */
 export type Fetch = (url: string, init?: { headers?: Record<string, string> }) => Promise<Response>;
 
+export type ScanProgress = { message: string; completed?: number; total?: number; skills?: number };
+
 export type GitHubOptions = {
+  onProgress?: (event: ScanProgress) => void;
   fetch: Fetch;
   /** By default, a token uses code search; without one, skills are found through the tree. */
   token?: string;
@@ -31,6 +34,7 @@ export function parseOrganizationUrl(input: string): string | undefined {
 export async function discoverOrganization(input: string, options: GitHubOptions) {
   const name = parseOrganizationUrl(input);
   if (!name) throw new AtlasError('Enter a GitHub repository URL or organization URL.');
+  options.onProgress?.({ message: `Checking organization ${name}…` });
   const github = client(options);
   const account = await github.json<{ login: string; type: string }>(
     `${API}/users/${name}`, `Organization not found: https://github.com/${name}`,
@@ -44,6 +48,7 @@ export async function discoverOrganization(input: string, options: GitHubOptions
       `${API}/orgs/${account.login}/repos?type=public&per_page=100&page=${page}`,
     );
     for (const repo of data) if (repo.private === false) repositories.set(repo.full_name, `https://github.com/${repo.full_name}`);
+    options.onProgress?.({ message: `Discovering repositories: page ${page}, ${repositories.size} public repositories found…` });
     if (!next && data.length < 100) break;
   }
   return { name: account.login, repositories: [...repositories.entries()].sort(([a], [b]) => {
@@ -130,7 +135,7 @@ function files(tree: Tree): string[] {
 
 type Client = ReturnType<typeof client>;
 
-function client({ fetch, token }: GitHubOptions) {
+function client({ fetch, token, onProgress }: GitHubOptions) {
   const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
   if (token) headers.Authorization = `Bearer ${token}`;
   const redact = (text: string) => token ? text.replaceAll(token, '[redacted]') : text;
@@ -138,6 +143,10 @@ function client({ fetch, token }: GitHubOptions) {
 
   async function get(url: string, init?: { headers: Record<string, string> }): Promise<Response> {
     try {
+      const path = new URL(url).pathname;
+      const repo = path.split('/').slice(url.startsWith(RAW) ? 1 : 2, url.startsWith(RAW) ? 3 : 4).join('/');
+      if (url.startsWith(RAW)) onProgress?.({ message: `Reading skill document: ${path.slice(1)}…` });
+      else if (path.startsWith('/repos/')) onProgress?.({ message: `${path.includes('/git/trees/') ? 'Listing files' : path.includes('/commits/') ? 'Resolving default branch' : 'Opening repository'}: ${repo}…` });
       return await fetch(url, init);
     } catch (error) {
       throw new AtlasError(`Cannot reach GitHub: ${redact(describe(error))}`);

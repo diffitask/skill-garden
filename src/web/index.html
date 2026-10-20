@@ -22,6 +22,14 @@
       </section>
     </form>
     <p id="status" role="status" aria-live="polite">Enter a repository or organization link to get started.</p>
+    <section id="scan-progress" hidden aria-label="Scan progress">
+      <h2>Scan progress</h2>
+      <p id="progress-stage" role="status" aria-live="polite"></p>
+      <progress id="progress-bar" aria-label="Repositories processed"></progress>
+      <p id="progress-counts"></p>
+      <p id="progress-time"></p>
+      <details><summary>Activity log (latest 60 updates)</summary><ol id="progress-log"></ol></details>
+    </section>
     <section id="scan-error" role="alert" tabindex="-1" hidden aria-labelledby="error-title">
       <h2 id="error-title">Repository scan failed</h2>
       <p id="error-message"></p>

@@ -56,3 +56,10 @@
   empty successful organizations.
 - Organizations with no public repositories or complete scans with no skills show successful,
   distinct empty messages and repository counts. Regenerate the portable HTML after changes.
+
+## Live portable scan progress
+- The portable HTML shows actual discovery pages and discovered public repository counts before the total is known, using an indeterminate progress bar.
+- After discovery, show repositories processed out of the total (including failed/skipped), skills found so far, the current repository and request stage (opening, resolving branch, listing files, reading skill documents).
+- Show elapsed seconds and seconds since the last activity, updating while waiting for GitHub without claiming additional work completed. No estimated percentage during discovery or invented reasoning.
+- Keep an expandable activity log limited to the latest 60 events, rendered as plain text without tokens. Keep the final counters and log on completion or failure, stop the timer, and show a terminal stage. Reset all progress on a new scan or retry; ignore duplicate submissions.
+- Server scans retain the existing status; detailed live progress is available in portable HTML.

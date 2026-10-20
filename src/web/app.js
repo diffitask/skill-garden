@@ -9,6 +9,33 @@ const list = document.querySelector('#skills');
 const errorPanel = document.querySelector('#scan-error');
 const tokenInput = document.querySelector('#github-token');
 const addToken = document.querySelector('#add-token');
+const progressPanel = document.querySelector('#scan-progress');
+const progressBar = document.querySelector('#progress-bar');
+const progressLog = document.querySelector('#progress-log');
+let scanStarted = 0;
+let lastUpdate = 0;
+
+function updateProgress(event) {
+  lastUpdate = Date.now();
+  const message = formatFailure(event.message);
+  document.querySelector('#progress-stage').textContent = message;
+  if (event.total !== undefined) {
+    progressBar.max = Math.max(1, event.total);
+    progressBar.value = event.completed;
+    document.querySelector('#progress-counts').textContent = `${event.completed} / ${event.total} repositories processed · ${event.skills} skills found`;
+  }
+  const item = document.createElement('li');
+  item.textContent = `${Math.floor((lastUpdate - scanStarted) / 1000)}s · ${message}`;
+  progressLog.append(item);
+  while (progressLog.children.length > 60) progressLog.firstElementChild.remove();
+  updateTime();
+}
+
+function updateTime() {
+  const now = Date.now();
+  document.querySelector('#progress-time').textContent = `Elapsed: ${Math.floor((now - scanStarted) / 1000)}s · Last activity: ${Math.floor((now - lastUpdate) / 1000)}s ago. Waiting for GitHub responses can take time.`;
+}
+
 
 document.querySelector('#retry').addEventListener('click', () => form.requestSubmit());
 addToken.addEventListener('click', () => {
@@ -47,8 +74,17 @@ form.addEventListener('submit', async (event) => {
   list.replaceChildren();
   document.querySelector('#scan-summary').textContent = '';
   document.querySelector('#test-data').replaceChildren();
+  scanStarted = lastUpdate = Date.now();
+  progressPanel.hidden = typeof globalThis.skillAtlasScan !== 'function';
+  progressLog.replaceChildren();
+  progressBar.removeAttribute('value');
+  document.querySelector('#progress-counts').textContent = 'Discovering repositories; total not known yet.';
+  document.querySelector('#scan-progress details').open = false;
+  updateProgress({ message: 'Starting scan…' });
+  const progressTimer = setInterval(updateTime, 1000);
   try {
     const data = await loadRepository(input.value.trim());
+    updateProgress({ message: data.partial ? 'Scan finished with partial results. See warnings below.' : 'Scan complete.' });
     const organization = data.organization;
     const name = organization ? organization.name : data.repository.id;
     document.querySelector('#repo-name').textContent = name;
@@ -135,10 +171,12 @@ form.addEventListener('submit', async (event) => {
     document.querySelector('#error-title').textContent = limited ? 'GitHub request limit reached' : 'Repository or organization scan failed';
     document.querySelector('#error-message').textContent = formatFailure(message);
     addToken.hidden = !portable || !limited || Boolean(tokenInput.value.trim());
+    updateProgress({ message: 'Scan stopped. See the error below.' });
     status.textContent = 'Scan failed. See the error below.';
     errorPanel.hidden = false;
     errorPanel.focus();
   } finally {
+    clearInterval(progressTimer);
     button.disabled = false;
     input.disabled = false;
     tokenInput.disabled = false;
@@ -162,7 +200,7 @@ function formatFailure(message) {
 
 async function loadRepository(repository) {
   // The portable HTML supplies a direct GitHub scanner; the server view uses its API.
-  if (globalThis.skillAtlasScan) return globalThis.skillAtlasScan(repository, tokenInput.value.trim());
+  if (globalThis.skillAtlasScan) return globalThis.skillAtlasScan(repository, tokenInput.value.trim(), updateProgress);
   const response = await fetch(`/api/scan?repository=${encodeURIComponent(repository)}`);
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'Unable to scan the repository.');

@@ -26,8 +26,13 @@ export async function scanTarget<T extends ScanResult = ScanResult>(
     counts: { discovered: organization.repositories.length, scanned: 0, failed: 0, skipped: 0 },
     skills: [], warnings: [], partial: false,
   };
+  const report = (message: string) => github.onProgress?.({ message,
+    completed: result.counts.scanned + result.counts.failed + result.counts.skipped,
+    total: result.counts.discovered, skills: result.skills.length });
+  report(`Discovered ${result.counts.discovered} public repositories. Starting scan…`);
   for (const url of organization.repositories) {
     const id = url.slice('https://github.com/'.length);
+    report(`Scanning ${id}…`);
     try {
       // Tree discovery covers forks and unindexed repositories even with a token.
       const repository = await scanSource(await openGitHub(url, { ...github, discovery: 'tree' }));
@@ -43,6 +48,7 @@ export async function scanTarget<T extends ScanResult = ScanResult>(
       result.warnings.push(`${id}: ${error.message}`);
       result.partial = true;
     }
+    report(`Processed ${id}. ${result.counts.scanned} scanned, ${result.counts.failed} failed, ${result.counts.skipped} skipped.`);
   }
   return result;
 }

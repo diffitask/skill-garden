@@ -69,6 +69,17 @@ for (const variant of ['server', 'portable'] as const) {
     await submit();
     assert.equal(el('#scan-error').hidden, true, el('#error-message').textContent!);
     assert.match(el('#status').textContent!, /Partial results for Example/);
+    if (variant === 'portable') {
+      assert.equal(el('#scan-progress').hidden, false);
+      assert.match(el('#progress-counts').textContent!, /4 \/ 4 repositories processed · 4 skills found/);
+      assert.match(el('#progress-stage').textContent!, /finished with partial results/);
+      const log = el('#progress-log').textContent!;
+      assert.match(log, /page 1, 1 public repositories/);
+      assert.match(log, /page 2, 4 public repositories/);
+      assert.match(log, /Listing files: Example\/alpha/);
+      assert.match(log, /Reading skill document/);
+      assert.match(log, /1 scanned, 1 failed, 1 skipped/);
+    }
     assert.match(el('#scan-summary').textContent!, /Example · 4 skills.*4 discovered, 2 successfully scanned, 1 failed, 1 skipped/);
     assert.match(el('#warnings').textContent!, /Example\/empty:.*empty; skipped/);
     assert.match(el('#warnings').textContent!, /Example\/failed:.*not found/);
@@ -119,6 +130,13 @@ for (const variant of ['server', 'portable'] as const) {
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
     assert.equal(requests.length, before + 1);
+    if (variant === 'portable') {
+      assert.equal(el('#progress-bar').hasAttribute('value'), false);
+      assert.match(el('#progress-counts').textContent!, /total not known/);
+      assert.doesNotMatch(el('#progress-log').textContent!, /Processed/);
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+      assert.match(el('#progress-time').textContent!, /Elapsed: 1s · Last activity: 1s/);
+    }
     release();
     await finish();
 
@@ -154,6 +172,10 @@ for (const variant of ['server', 'portable'] as const) {
       if (kind === 'listing-failed') recording[LIST] = { status: 500, body: {} };
       await submit(kind === 'invalid' ? 'https://github.com/Example/repo/extra' : ORG);
       assert.equal(el('#scan-error').hidden, false);
+      if (variant === 'portable') {
+        assert.match(el('#progress-stage').textContent!, /Scan stopped/);
+        assert.doesNotMatch(el('#progress-log').textContent!, /browser-test-token|server-test-token/);
+      }
       assert.equal(document.activeElement, el('#scan-error'));
       assert.equal(el('#results').hidden, true);
       assert.equal(el('#scan-summary').textContent, '');
