@@ -303,3 +303,22 @@ test('deleted feedback blocks the reserved batch; invalid finish cannot release 
   assert.equal((await client.start(deliveries[0])).status, 'blocked');
   assert.equal((await client.status(17)).active, null);
 });
+
+test('a lost response after a committed reservation retains the lock without sending', async () => {
+  const api = github();
+  let loseResponse = true;
+  let sends = 0;
+  const client = createCoordinator({ repository,
+    request: async (method: string, path: string, body?: any) => {
+      const result = await api.request(method, path, body);
+      if (method === 'PATCH' && loseResponse) { loseResponse = false; throw new Error('Response lost after commit'); }
+      return result;
+    },
+    sendWebhook: async () => { sends++; return { status: 202 }; },
+  });
+  await client.init();
+  await assert.rejects(client.dispatch(payload()), /Response lost/);
+  assert.ok((await client.status(17)).active);
+  assert.equal((await client.dispatch(payload())).status, 'busy');
+  assert.equal(sends, 0);
+});
