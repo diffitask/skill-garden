@@ -11,3 +11,5 @@
 - `npm run build:web` produces a self-contained `skill-atlas.html` to open directly in a browser. No server, port forwarding, CDN scripts, or package installation is needed to use the generated file.
 - The portable page scans public GitHub repositories directly using the same scanner, without a token. An internet connection is required; API failures and rate limits appear in the page.
 - Include styles, scanner, parser, and interaction code in the HTML. It supports skill selection and full original document contents, just like the server view.
+
+- Both views use the analysis rules for skill copies and test data: copies count as one skill, and test data is excluded from the skill list and file reads. Regenerate the portable HTML whenever the scanner changes.
