@@ -1,5 +1,6 @@
 # Automated PR review
 - Run review through Air Automations with the project's central agent access, following `.air/prompts/pr-review.md` and `.agents/skills/code-review/SKILL.md`. A separate OpenAI API key is not required for this route.
+- The review skill compares suspected bugs at the PR base and head, explains the triggering input and causal change, and excludes pre-existing bugs unless worsened. It checks affected callers and required generated artifacts for concrete failures, and distinguishes executed reproductions from code-based inferences.
 - Keep the intended Air configuration and activation status in `.air/prompts/pr-review.config.md`. Repository files alone do not create a live automation. GitHub PR opened, new commits, and ready-for-review triggers are configured in Air; manual runs take a PR number.
 - Do not modify repository code or push commits. Use authenticated GitHub CLI access from the Air environment to publish; if it is unavailable, fail visibly rather than claiming publication.
 - The publisher validates the repository, PR number, and full reviewed SHA; skip publication when the PR is closed or its head changed.
