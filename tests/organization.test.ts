@@ -202,3 +202,19 @@ test('organization responses interrupted after their headers fail only that repo
     }
   }
 });
+
+test('YAML alias conversion failures warn and retain skills from every organization repository', async () => {
+  const fixture = organizationFixture();
+  fixture[LIST] = { status: 200, body: [entry('alpha'), entry('zebra')] };
+  fixture['https://raw.githubusercontent.com/Example/zebra/zebra-commit/.agents/skills/shared/SKILL.md'] = {
+    status: 200, body: '---\nname: aliases\na: &a [x,x,x,x,x,x,x,x,x,x]\nb: &b [*a,*a,*a,*a,*a,*a,*a,*a,*a,*a]\nc: [*b,*b,*b,*b,*b,*b,*b,*b,*b,*b]\n---\n# Keep original instructions',
+  };
+  const result = await command(fixture);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Example · 4 skills/);
+  assert.match(result.stdout, /2 discovered, 2 successfully scanned, 0 failed, 0 skipped/);
+  assert.match(result.stdout, /Example\/alpha · 2 skills/);
+  assert.match(result.stdout, /Example\/zebra · 2 skills/);
+  assert.match(result.stdout, /^shared$/m, 'Invalid front matter uses the skill directory name');
+  assert.match(result.stderr, /Example\/zebra: .*malformed front matter: Excessive alias count/);
+});

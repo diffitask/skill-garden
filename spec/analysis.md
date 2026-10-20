@@ -30,7 +30,10 @@ Skill: id = `repo:path`, name, description, commit, copies, in an agent folder (
   else the first by path; the others are its copies. Only the agent folder directly
   above `skills/` or `skill/` determines this preference; an ancestor named `.agents` does not
 - The link pins the *scanned commit*
-- Malformed front matter → a *warning*, the scan goes on
+- Malformed front matter → a *warning*, the scan goes on. YAML-to-JavaScript conversion
+  failures (including alias expansion limits) use the directory name, empty metadata,
+  and preserve the original instructions. Keep YAML expansion limits enabled; a bad
+  document must not discard other skills or completed organization repositories.
 - Unreachable repository → a clear message, exit code 1
 - Without a token, a tree too large for one GitHub answer: the files GitHub does list, plus
   `.agents/skills`, `.claude/skills`, `.github/skills` and `agent/skills` at the root in full,

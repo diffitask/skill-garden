@@ -101,6 +101,19 @@ for (const variant of ['server', 'portable'] as const) {
     assert.ok(!requests.some(({ url }) => url.includes(expectedToken)));
     if (variant === 'server') assert.ok(!dom.serialize().includes('server-test-token'));
 
+    recording['https://raw.githubusercontent.com/Example/zebra/zebra-commit/.agents/skills/shared/SKILL.md'] = {
+      status: 200, body: '---\nname: aliases\na: &a [x,x,x,x,x,x,x,x,x,x]\nb: &b [*a,*a,*a,*a,*a,*a,*a,*a,*a,*a]\nc: [*b,*b,*b,*b,*b,*b,*b,*b,*b,*b]\n---\n# Original document',
+    };
+    await submit();
+    assert.equal(el('#results').hidden, false);
+    assert.equal(document.querySelectorAll('#skills button').length, 4);
+    assert.match(el('#warnings').textContent!, /Example\/zebra: .*malformed front matter: Excessive alias count/);
+    const fallback = [...document.querySelectorAll<HTMLButtonElement>('#skills button')].find((item) => item.querySelector('strong')?.textContent === 'shared')!;
+    fallback.click();
+    assert.match(el('#content').textContent!, /# Original document/);
+    assert.match(el('#description').textContent!, /No description provided/);
+    recording = organizationFixture();
+
     blocked = true;
     input.value = ORG;
     const before = requests.length;
