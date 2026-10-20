@@ -35,3 +35,32 @@ Skill: id = `repo:path`, name, description, commit, copies, in an agent folder (
 - Without a token, a tree too large for one GitHub answer: the files GitHub does list, plus
   `.agents/skills`, `.claude/skills`, `.github/skills` and `agent/skills` at the root in full,
   and a *warning* that skills may be missed
+
+## Organization analysis
+- A GitHub organization URL (`https://github.com/<organization>`, also accepting the
+  existing optional scheme and trailing slash) scans every public repository's default
+  branch. Repository URLs and local directory inputs retain their existing behavior.
+- Validate the account type before enumeration. A user account produces an error explaining
+  that organization scanning requires an organization. Invalid inputs, missing organizations,
+  and discovery failures are errors, never successful empty scans.
+- Enumerate the GitHub organization repositories API with `type=public`, 100 per page,
+  following pagination. Include forks and archived repositories. Filter out private
+  repositories even with a token, and deduplicate repeated repository entries across pages.
+- Use GitHub API tree discovery with the existing token handling (no cloning or code-search
+  indexing dependency). Scan repositories sequentially; file reads within each repository
+  retain existing concurrency. The single-repository time target does not apply to an organization.
+- Apply skill parsing, ordering, copies, test-data exclusion, and commit-pinned links independently
+  per repository. Identical names or documents across repositories remain distinct skills.
+- Return the organization name, alphabetically ordered repository results (case insensitive),
+  total skills, and repository counts: discovered public repositories, successfully scanned,
+  failed, skipped. Empty repositories (no default branch or an empty commit response) are
+  skipped with a repository-specific warning. Each discovered repository belongs to one count.
+- A failed repository does not discard completed repositories. Warnings identify their source
+  repository. Failed/skipped repositories, truncated listings, and missing listed files make
+  the organization result explicitly partial. Malformed front matter retains the existing
+  warning and fallback behavior without marking the repository failed.
+- Rate limits during discovery fail the scan. During a repository scan they mark that
+  repository failed and retain completed results, with rate-limit guidance. Discovery must
+  finish before repository scans start; a failed later discovery page is still an error.
+- No public repositories, or public repositories successfully scanned with no skills, are
+  successful explicit empty states. A scan with failures and no skills is labeled partial.

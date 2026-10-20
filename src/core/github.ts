@@ -22,6 +22,36 @@ export function parseGitHubUrl(input: string): { owner: string; repo: string } |
   return match ? { owner: match[1], repo: match[2] } : undefined;
 }
 
+/** A single GitHub account URL is an organization scan request. */
+export function parseOrganizationUrl(input: string): string | undefined {
+  return /^(?:https?:\/\/)?(?:www\.)?github\.com\/([\w.-]+)\/?$/i.exec(input.trim())?.[1];
+}
+
+/** Validate the account before listing public repositories, including forks and archives. */
+export async function discoverOrganization(input: string, options: GitHubOptions) {
+  const name = parseOrganizationUrl(input);
+  if (!name) throw new AtlasError('Enter a GitHub repository URL or organization URL.');
+  const github = client(options);
+  const account = await github.json<{ login: string; type: string }>(
+    `${API}/users/${name}`, `Organization not found: https://github.com/${name}`,
+  );
+  if (account.type !== 'Organization') {
+    throw new AtlasError(`Organization scanning requires an organization; ${account.login} is a user account.`);
+  }
+  const repositories = new Map<string, string>();
+  for (let page = 1; ; page++) {
+    const { data, next } = await github.page<{ full_name: string; private: boolean }[]>(
+      `${API}/orgs/${account.login}/repos?type=public&per_page=100&page=${page}`,
+    );
+    for (const repo of data) if (repo.private === false) repositories.set(repo.full_name, `https://github.com/${repo.full_name}`);
+    if (!next && data.length < 100) break;
+  }
+  return { name: account.login, repositories: [...repositories.entries()].sort(([a], [b]) => {
+    const x = a.toLowerCase(), y = b.toLowerCase();
+    return x < y ? -1 : x > y ? 1 : a < b ? -1 : a > b ? 1 : 0;
+  }).map(([, url]) => url) };
+}
+
 /** Resolves the default branch to a commit and lists the files that may be skills. */
 export async function openGitHub(input: string, options: GitHubOptions): Promise<Source> {
   const name = parseGitHubUrl(input);
@@ -32,6 +62,7 @@ export async function openGitHub(input: string, options: GitHubOptions): Promise
     `Repository not found: https://github.com/${name.owner}/${name.repo}`,
   );
   const id = info.full_name;
+  if (!info.default_branch) throw new AtlasError('Repository is empty; skipped');
   const { sha } = await github.json<{ sha: string }>(`${API}/repos/${id}/commits/${encodePath(info.default_branch)}`);
   const warnings: string[] = [];
   const paths = options.token && options.discovery !== 'tree' ? await searchPaths(github, id) : await treePaths(github, id, sha, warnings);
@@ -102,40 +133,48 @@ type Client = ReturnType<typeof client>;
 function client({ fetch, token }: GitHubOptions) {
   const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
   if (token) headers.Authorization = `Bearer ${token}`;
+  const redact = (text: string) => token ? text.replaceAll(token, '[redacted]') : text;
   const answers = new Map<string, Promise<unknown>>(); // the root tree is asked for once per skill root
 
   async function get(url: string, init?: { headers: Record<string, string> }): Promise<Response> {
     try {
       return await fetch(url, init);
     } catch (error) {
-      throw new AtlasError(`Cannot reach GitHub: ${describe(error)}`);
+      throw new AtlasError(`Cannot reach GitHub: ${redact(describe(error))}`);
     }
   }
 
-  async function request(url: string, notFound: string): Promise<unknown> {
+  async function request(url: string, notFound: string) {
     const response = await get(url, { headers });
-    if (response.ok) return response.json();
+    if (response.ok) return { data: await response.json(), next: /<[^>]+>;\s*rel="next"/.test(response.headers.get('link') ?? '') };
     const body: unknown = await response.json().catch(() => undefined);
     const message = (body as { message?: unknown } | undefined)?.message;
     const text = typeof message === 'string' ? message : '';
     if (response.status === 404) throw new AtlasError(notFound);
-    if ((response.status === 403 || response.status === 429) && /rate limit/i.test(text)) {
+    if (response.status === 409) throw new AtlasError('Repository is empty; skipped');
+    if (response.status === 429 || (response.status === 403 && (/rate limit/i.test(text) || response.headers.get('x-ratelimit-remaining') === '0'))) {
       throw new AtlasError(`GitHub rate limit reached; ${token ? 'try again in a minute' : 'set GITHUB_TOKEN'}`);
     }
     if (response.status === 401) throw new AtlasError('GitHub rejected the token in GITHUB_TOKEN');
-    throw new AtlasError(`GitHub answered ${response.status} for ${url}${text && `: ${text}`}`);
+    throw new AtlasError(`GitHub answered ${response.status} for ${url}${text && `: ${redact(text)}`}`);
   }
 
   return {
     /** A GitHub API answer; `notFound` explains a 404. */
     json<T>(url: string, notFound = `Not found on GitHub: ${url}`): Promise<T> {
-      if (!answers.has(url)) answers.set(url, request(url, notFound));
+      if (!answers.has(url)) answers.set(url, request(url, notFound).then((answer) => answer.data));
       return answers.get(url) as Promise<T>;
+    },
+    async page<T>(url: string): Promise<{ data: T; next: boolean }> {
+      return request(url, `Organization discovery failed: ${url}`);
     },
     /** A file's bytes at the scanned commit, or undefined if it is not there. */
     async raw(url: string): Promise<Uint8Array | undefined> {
       const response = await get(url);
       if (response.status === 404) return undefined;
+      if (response.status === 429 || (response.status === 403 && response.headers.get('x-ratelimit-remaining') === '0')) {
+        throw new AtlasError('GitHub rate limit reached; try again in a minute');
+      }
       if (!response.ok) throw new AtlasError(`GitHub answered ${response.status} for ${url}`);
       return new Uint8Array(await response.arrayBuffer());
     },

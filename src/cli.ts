@@ -16,6 +16,7 @@ if (args.length === 1 && args[0] === '--version') {
   const token = process.env.GITHUB_TOKEN || undefined;
   process.exitCode = await run(args, {
     open: (input) => (parseGitHubUrl(input) ? openGitHub(input, { fetch, token }) : openDirectory(input)),
+    github: { fetch, token },
     print: (text) => console.log(text),
     error: (text) => console.error(text),
   });

@@ -10,23 +10,24 @@
 <body>
   <header><a class="brand" href="/"><svg class="brand-flower" viewBox="0 0 40 48" width="32" height="38" aria-hidden="true" focusable="false"><path d="M20 24v21" fill="none" stroke="#53835a" stroke-width="2.5" stroke-linecap="round"/><path d="M20 38c-8 0-12-5-12-9 7 0 12 3 12 9Z" fill="#8eae76"/><path d="M20 33c7 0 11-4 11-8-6 0-11 3-11 8Z" fill="#6f965c"/><g fill="#e9a9b4"><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(0 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(45 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(90 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(135 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(180 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(225 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(270 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(315 20 17)"/></g><circle cx="20" cy="17" r="5.5" fill="#e8be58"/></svg><span>Skill Atlas</span></a><span class="badge">LOCAL EXPLORER</span></header>
   <main>
-    <section class="intro"><span class="eyebrow">A MAP OF WHAT YOUR AGENT CAN DO</span><h1>Explore a repository’s skills.</h1><p>One repository. Every skill. The instructions behind them.</p></section>
+    <section class="intro"><span class="eyebrow">A MAP OF WHAT YOUR AGENT CAN DO</span><h1>Explore repository and organization skills.</h1><p>Public organizations or individual repositories. Every skill. The instructions behind them.</p></section>
     <form id="repository-form">
-      <label for="repository">GitHub repository</label>
-      <div class="input-row"><input id="repository" name="repository" type="text" placeholder="https://github.com/owner/repository" required autocomplete="url" spellcheck="false"><button id="scan" type="submit">Explore repository <span aria-hidden="true">↗</span></button></div>
-      <p class="hint">Finds SKILL.md files on the default branch. Set GITHUB_TOKEN when starting the server for private repositories or higher limits.</p>
+      <label for="repository">GitHub repository or organization</label>
+      <div class="input-row"><input id="repository" name="repository" type="text" placeholder="https://github.com/owner/repository" required autocomplete="url" spellcheck="false"><button id="scan" type="submit">Explore skills <span aria-hidden="true">↗</span></button></div>
+      <p class="hint">Finds SKILL.md files on each default branch. Organization scans include public repositories only. Set GITHUB_TOKEN when starting the server for private repositories or higher limits.</p>
       <section id="github-access" hidden aria-label="GitHub access">
         <label for="github-token">GitHub token (optional)</label>
         <input id="github-token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your GitHub token" aria-describedby="token-help">
         <p id="token-help" class="hint">For a higher API limit when browsing public repositories. Sent only to GitHub; kept in this tab and never saved. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Create a token on GitHub ↗</a></p>
       </section>
     </form>
-    <p id="status" role="status" aria-live="polite">Enter a repository link to get started.</p>
+    <p id="status" role="status" aria-live="polite">Enter a repository or organization link to get started.</p>
     <section id="scan-error" role="alert" tabindex="-1" hidden aria-labelledby="error-title">
       <h2 id="error-title">Repository scan failed</h2>
       <p id="error-message"></p>
       <div class="error-actions"><button id="retry" type="button">Try again</button><button id="add-token" type="button" hidden>Add GitHub token</button></div>
     </section>
+    <p id="scan-summary" role="status"></p>
     <div id="warnings" role="status" hidden></div>
     <section id="results" hidden aria-label="Repository skills">
       <div class="results-heading"><h2 id="repo-name"></h2><span id="count" class="badge"></span></div>
@@ -37,6 +38,7 @@
             <div><span class="eyebrow">SKILL OVERVIEW</span><h2 id="skill-name"></h2></div>
             <a id="source" target="_blank" rel="noopener noreferrer">View on GitHub ↗</a>
           </div>
+          <p id="skill-repository"></p>
           <div id="description" aria-label="Skill summary"></div>
           <details id="full-document">
             <summary>Full SKILL.md <span>Original instructions</span></summary>
@@ -46,6 +48,7 @@
         </article>
       </div>
     </section>
+    <section id="test-data" aria-label="Test data, not skills"></section>
     <section id="empty" class="empty"><span class="empty-icon" aria-hidden="true">⌘</span><h2 id="empty-title">Every skill has a story.</h2><p id="empty-message">Explore a repository to read its agent instructions, all in one place.</p></section>
   </main>
   <footer><span>Skill Atlas</span><span>Read the skills. Understand the agent.</span></footer>
