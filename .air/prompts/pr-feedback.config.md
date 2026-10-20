@@ -70,3 +70,5 @@ action. Errors require inspection, not automatic write retries.
 - Fix Git output must be “as the instructions say”; checkout remains main for trusted instructions. The worker switches to the coordinator-verified PR branch and pushes that branch only.
 - Ten batches are allowed per PR. Watch reconciles labels on every poll, including after CI completes. Reviewer publication also reconciles; no human label toggles are required.
 - Actions read access is sufficient for the configured CI readiness gate; Checks API access is not required. Air trigger settings themselves remain external configuration.
+
+- `.github/workflows/pr-status.yml` now reconciles labels on GitHub events and every five minutes, using only trusted default-branch code and the workflow token. Air is still responsible for finding/fixing/reviewing code; status updates do not need a separate human run.
