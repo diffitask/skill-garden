@@ -101,6 +101,19 @@ test('the same skill directory in agent folders inside the same folder → one s
   );
 });
 
+test('an ancestor named .agents does not affect which copy is preferred', async () => {
+  for (const folder of ['skills', 'skill']) {
+    const preferred = `.agents/modules/.agents/${folder}/lint/SKILL.md`;
+    const other = `.agents/modules/.aaa/${folder}/lint/SKILL.md`;
+    const result = await scanGitHubFiles([other, preferred]);
+    assert.deepEqual(result.warnings, []);
+    assert.deepEqual(
+      result.skills.map(({ path, copies }) => ({ path, copies })),
+      [{ path: preferred, copies: [other] }],
+    );
+  }
+});
+
 test('in an agent\'s folder: a dot folder\'s skills, at any depth; whatever the folders are named, elsewhere otherwise', async () => {
   const inAgentFolder = {
     '.claude/skills/commits/SKILL.md': true,
