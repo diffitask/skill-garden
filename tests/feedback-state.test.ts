@@ -391,3 +391,30 @@ test('a lost response after a committed reservation retains the lock without sen
   assert.equal((await client.dispatch(payload())).status, 'busy');
   assert.equal(sends, 0);
 });
+
+
+test('explicit local claim validates feedback and starts one worker without webhook delivery', async () => {
+  const { client, deliveries, options } = await fixture();
+  const results = await Promise.all([client.claim(payload()), createCoordinator(options).claim(payload())]);
+  const started = results.find((r) => r.status === 'started');
+  assert.ok(started);
+  assert.deepEqual(results.map((r) => r.status).sort(), ['busy', 'started']);
+  assert.equal(deliveries.length, 0);
+  assert.equal(started.branch, 'feature-17');
+  assert.equal((await client.dispatch(payload())).status, 'busy');
+  await client.finish({ ...payload(), batch_id: started.batch_id, worker_token: started.worker_token, outcome: 'completed' });
+  assert.equal((await client.claim(payload())).status, 'already_processed');
+  await assert.rejects(client.claim(payload(17, [10])), /does not belong/);
+});
+
+test('local claims share the ten-attempt cap with webhook dispatch and preserve existing history', async () => {
+  const { client, api } = await fixture();
+  for (let i = 0; i < 10; i++) {
+    api.feedback.get('issues/comments/1').body += ' Updated.';
+    const worker = await client.claim(payload());
+    assert.equal(worker.status, 'started');
+    await client.finish({ ...payload(), batch_id: worker.batch_id, worker_token: worker.worker_token, outcome: 'completed' });
+  }
+  assert.equal((await client.claim(payload(17, [4]))).status, 'round_limit');
+  assert.equal((await client.status(17)).batches.length, 10);
+});

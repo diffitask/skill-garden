@@ -66,7 +66,7 @@ Handle results:
 - Command error: inspect `status`, report the blocker, and do not resend blindly.
 
 Remove `AI: review passed` when a label is stale or new actionable findings exist.
-Never add it yourself. Fix manages `AI: fixing`; labels are not locks.
+Never add it manually. Fetch `.air/scripts/sync-pr-status.mjs` alongside the coordinator from the same trusted default-branch revision, preserving relative imports. For every inspected PR, run `FEEDBACK_REPOSITORY=diffitask/ai-workshop-2026 node <trusted-sync-pr-status-path> <PR-number>` before and after dispatch evaluation, even when there is no new feedback. The helper manages all AI status labels, including green status after CI completes. Report reconciliation failures explicitly. Do not rerun a clean review solely because CI was pending. Labels are not locks.
 
 Write all GitHub-facing text in English. Keep the run result to PRs checked,
 dispatched PR links, and blockers. If nothing qualifies, say “No new actionable

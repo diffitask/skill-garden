@@ -65,3 +65,8 @@ feedback or reset the ten-round limit. Requests for another attempt require a
 deliberate new feedback version, within the limit, or a reviewed future recovery
 change; never delete state to bypass limits. Manual recovery is not an automation
 action. Errors require inspection, not automatic write retries.
+
+## Readiness loop
+- Fix Git output must be “as the instructions say”; checkout remains main for trusted instructions. The worker switches to the coordinator-verified PR branch and pushes that branch only.
+- Ten batches are allowed per PR. Watch reconciles labels on every poll, including after CI completes. Reviewer publication also reconciles; no human label toggles are required.
+- Actions read access is sufficient for the configured CI readiness gate; Checks API access is not required. Air trigger settings themselves remain external configuration.

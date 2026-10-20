@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { runPublisher } from '../.air/scripts/publish-review.mjs';
+import { runPublisher, publishReview } from '../.air/scripts/publish-review.mjs';
 
 const sha = 'a'.repeat(40);
 const marker = '<!-- air-code-review -->';
@@ -91,4 +91,21 @@ test('closed PRs and superseded commits are skipped and publication failures pro
     assert.equal(calls.length, 0);
   }
   await assert.rejects(publish({}, undefined, true), /denied comment access/);
+});
+
+
+test('structured clean markers require a successful nonempty untruncated review', async () => {
+  for (const env of [
+    { REVIEW_RESULT: 'success', REVIEW_MESSAGE: 'No actionable findings.', expected: 'clean' },
+    { REVIEW_RESULT: 'failure', REVIEW_MESSAGE: 'Incomplete', expected: 'failed' },
+    { REVIEW_RESULT: 'success', REVIEW_MESSAGE: ' ', expected: 'failed' },
+    { REVIEW_RESULT: 'success', REVIEW_MESSAGE: 'x'.repeat(60001), expected: 'failed' },
+  ]) {
+    let body = '';
+    await publishReview({ context: { repo: { owner: 'owner', repo: 'repo' } },
+      env: { PR_NUMBER: '8', PR_HEAD_SHA: sha, REVIEW_OUTCOME: 'clean', ...env },
+      github: { rest: { pulls: { get: async () => ({ data: { state: 'open', head: { sha } } }) },
+        issues: { createComment: async (params: any) => { body = params.body; return { html_url: 'https://github.com/owner/repo/pull/8#issuecomment-1' }; } } } } });
+    assert.match(body, new RegExp(`Commit: ${sha}\\n\\n<!-- air-review:${env.expected} -->`));
+  }
 });

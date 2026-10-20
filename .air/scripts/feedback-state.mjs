@@ -164,6 +164,27 @@ export function createCoordinator({ repository, request, sendWebhook, now = () =
       return number === undefined ? state : state.prs[number] ?? { active: null, batches: [] };
     },
 
+    /** Explicit local execution: reserve and start atomically, without a webhook. */
+    async claim(payload) {
+      const pr = await currentPR(payload);
+      const feedback = await fetchFeedback(payload.pr_number, payload.feedback);
+      return transaction((state) => {
+        const record = state.prs[payload.pr_number] ??= { active: null, batches: [] };
+        if (record.active) return { value: { status: 'busy', batch_id: record.active } };
+        const seen = new Set(record.batches.flatMap((b) => b.feedback.map((f) => f.version)));
+        const fresh = feedback.filter((f) => !seen.has(f.version));
+        if (!fresh.length) return { value: { status: 'already_processed' } };
+        if (record.batches.length >= MAX_BATCHES) return { value: { status: 'round_limit' } };
+        const id = hash([repository, payload.pr_number, payload.head_sha, fresh.map((f) => f.version)]);
+        const worker_token = randomUUID();
+        record.batches.push({ id, head_sha: payload.head_sha, feedback: fresh, status: 'running',
+          created_at: now(), started_at: now(), worker_token });
+        record.active = id;
+        return { write: true, value: { status: 'started', batch_id: id, worker_token,
+          branch: pr.head.ref, head_sha: payload.head_sha, feedback: fresh } };
+      });
+    },
+
     async dispatch(payload) {
       await currentPR(payload);
       if (typeof sendWebhook !== 'function') throw new Error('Webhook sender is not configured');
@@ -291,7 +312,7 @@ export async function githubRequest(method, endpoint, body) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const [command, file] = process.argv.slice(2);
-    if (!['init', 'status', 'dispatch', 'start', 'finish', 'recover'].includes(command)) throw new Error('Expected init, status, dispatch, start, finish, or recover');
+    if (!['init', 'status', 'dispatch', 'claim', 'start', 'finish', 'recover'].includes(command)) throw new Error('Expected init, status, dispatch, claim, start, finish, or recover');
     let sendWebhook;
     if (command === 'dispatch') {
       const url = new URL(process.env.FIX_PR_FEEDBACK_URL ?? '');
