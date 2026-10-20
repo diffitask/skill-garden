@@ -2,6 +2,10 @@
 `./skill-atlas scan <GitHub URL | directory>`
 Prints the result **at once**; *nothing is stored*.
 `GITHUB_TOKEN`, optional: a higher GitHub rate limit.
+## Version
+`./skill-atlas --version` prints the version from the installed `package.json`, followed
+by a newline, and exits with code 0. It works from any working directory without
+scanning a repository, making network requests, or writing files. Scan behavior is unchanged.
 ## Output
 ```
 JetBrains/kotlin · 6 skills
