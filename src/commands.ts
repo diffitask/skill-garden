@@ -1,7 +1,7 @@
 // The skill-atlas commands. The same code serves the Node CLI and the browser
 // terminal: everything that differs between them comes in through the context.
 import { AtlasError } from './core/errors.ts';
-import { skillLink, type Repository, type Skill } from './core/model.ts';
+import { fileLink, skillLink, type Repository, type Skill } from './core/model.ts';
 import { scan, type Source } from './core/scan.ts';
 
 export type Context = {
@@ -35,18 +35,22 @@ export async function run(args: string[], context: Context): Promise<number> {
 async function scanCommand(args: string[], context: Context) {
   if (args.length !== 1) throw new AtlasError('Usage: skill-atlas scan <GitHub URL | directory>');
   const result = await scan(await context.open(args[0]));
-  printRepository(result.repository, result.skills, context);
+  printRepository(result.repository, result.skills, result.testData, context);
   for (const warning of result.warnings) context.error(`warning: ${warning}`);
 }
 
 /**
  * `<owner>/<repo> · N skills`, then each skill's name, first sentence and link: those
- * in agents' folders first, then those elsewhere, each group under its heading.
+ * in agents' folders first, then those elsewhere, each group under its heading. Last,
+ * the test data, not counted: only its links, so a test folder taken wrongly shows.
  */
-function printRepository(repository: Repository, skills: Skill[], { print }: Context) {
+function printRepository(repository: Repository, skills: Skill[], testData: string[], { print }: Context) {
   print(`${repository.id} · ${count(skills.length)}`);
   printGroup("In agents' folders", repository, skills.filter((skill) => skill.inAgentFolder), print);
   printGroup('Elsewhere', repository, skills.filter((skill) => !skill.inAgentFolder), print);
+  if (testData.length === 0) return;
+  print(`Test data, not skills · ${testData.length} ${testData.length === 1 ? 'file' : 'files'}`);
+  for (const path of testData) print(`  ${fileLink(repository, path)}`);
 }
 
 function printGroup(heading: string, repository: Repository, skills: Skill[], print: (text: string) => void) {

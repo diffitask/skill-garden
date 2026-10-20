@@ -41,7 +41,7 @@ test('scan prints the repository, then each skill with its first sentence and pi
   );
 });
 
-test('./fixture: every skill, in agents\' folders, then elsewhere, sorted by name, linked to its file, with a warning for the malformed one', () => {
+test('./fixture: every skill, in agents\' folders, then elsewhere, sorted by name, linked to its file; test data last; a warning for the malformed one', () => {
   const root = pathToFileURL(FIXTURE).href;
   assert.equal(fixture.code, 0);
   assert.equal(
@@ -56,15 +56,20 @@ test('./fixture: every skill, in agents\' folders, then elsewhere, sorted by nam
       '  also in .claude/skills/commits/SKILL.md',
       'release-checklist',
       `  ${root}/.agents/skills/release-checklist/SKILL.md`,
-      'sample — A skill the tests read.',
-      `  ${root}/tests/data/.claude/skills/sample/SKILL.md`,
+      'write-tests — Write tests the way this repository does.',
+      `  ${root}/.claude/skills/write-tests/SKILL.md`,
       'Elsewhere · 2 skills',
       "aspect-generator — Generates a language aspect for the user's project.",
       `  ${root}/plugins/mcp-tools/resources/assistant/skills/aspect-generator/SKILL.md`,
       'triage — Triage a new issue the way this repository does.',
       `  ${root}/docs/workflows/triage/SKILL.md`,
+      'Test data, not skills · 2 files',
+      `  ${root}/integration-tests/src/jvmTest/resources/skills/weather-retrieval/SKILL.md`,
+      `  ${root}/tests/data/.claude/skills/sample/SKILL.md`,
     ].join('\n'),
   );
+  // One warning: the test data, without front matter, is not read.
+  assert.equal(fixture.stderr.split('\n').length, 1);
   assert.match(fixture.stderr, /^warning: \.agents\/skills\/release-checklist\/SKILL\.md: malformed front matter: /);
 });
 
@@ -113,6 +118,31 @@ test('in an agent\'s folder: a dot folder\'s skills, at any depth; whatever the 
   };
   const result = await scanGitHubFiles(Object.keys(inAgentFolder));
   assert.deepEqual(Object.fromEntries(result.skills.map((skill) => [skill.path, skill.inAgentFolder])), inAgentFolder);
+});
+
+test('test data: a test folder above the skill directory, by the words of its name, wherever it is', async () => {
+  const testData = [
+    'integration-tests/src/jvmTest/resources/skills/weather-retrieval/SKILL.md',
+    'src/test/resources/SKILL.md',
+    'tests/data/.claude/skills/sample/SKILL.md',
+    'pkg/testdata/skills/broken/SKILL.md',
+    'packages/core/__fixtures__/skills/demo/SKILL.md',
+    'MyApp.Tests/skills/x/SKILL.md',
+    'src/XMLTest/skills/y/SKILL.md',
+    'modules/web/testData/.cursor/skills/z/SKILL.md',
+  ];
+  const skills = [
+    // The skill directory's own name says nothing: it is the skill's.
+    '.claude/skills/write-tests/SKILL.md',
+    'tests/SKILL.md',
+    // "test" inside a word is not the word.
+    'latest/skills/a/SKILL.md',
+    'attestation/skills/b/SKILL.md',
+    'docs/contest/c/SKILL.md',
+  ];
+  const result = await scanGitHubFiles([...skills, ...testData]);
+  assert.deepEqual(result.testData, [...testData].sort());
+  assert.deepEqual(result.skills.map((skill) => skill.path).sort(), [...skills].sort());
 });
 
 test('every SKILL.md, but not through symbolic links, nor .git or node_modules locally; at the root, named after the repository', async (t) => {

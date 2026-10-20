@@ -7,15 +7,19 @@ export const SKILL_ROOTS = ['.agents/skills', '.claude/skills', '.github/skills'
 /** The agents' shared folder: of a skill's copies, the one listed. */
 const SHARED = '.agents';
 
+/** The words that make a folder a test folder, whatever else its name says: `jvmTest`, `integration-tests`. */
+const TEST_WORDS = new Set(['test', 'tests', 'testing', 'testdata', 'fixture', 'fixtures', 'e2e']);
+
 /**
  * Every file named exactly SKILL.md, named after its directory (a SKILL.md at the
  * root after the repository). The same skill in several agents' folders next to each
  * other, such as `.agents/skills/x` and `.cursor/skills/x`, is one skill: the
- * `.agents` file, else the first by path, with the others as its copies.
+ * `.agents` file, else the first by path, with the others as its copies. Test data
+ * is not a skill.
  */
 export function findSkills(paths: string[], repositoryName: string): SkillFile[] {
   const groups = new Map<string, string[]>();
-  for (const path of paths.filter((path) => path.split('/').at(-1) === 'SKILL.md').sort()) {
+  for (const path of skillFiles(paths).filter((path) => !isTestData(path))) {
     const key = copyKey(path) ?? path;
     groups.set(key, [...(groups.get(key) ?? []), path]);
   }
@@ -28,6 +32,29 @@ export function findSkills(paths: string[], repositoryName: string): SkillFile[]
       inAgentFolder: copyKey(path) !== undefined,
     }))
     .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+}
+
+const WORD_BREAK = /[^a-zA-Z0-9]+|(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/;
+
+/** Every SKILL.md in a test folder, by path: input of the repository's tests, not skills. */
+export function findTestData(paths: string[]): string[] {
+  return skillFiles(paths).filter(isTestData);
+}
+
+function skillFiles(paths: string[]): string[] {
+  return paths.filter((path) => path.split('/').at(-1) === 'SKILL.md').sort();
+}
+
+/**
+ * A test folder above the skill directory: `src/jvmTest/resources/skills/x/SKILL.md`, but
+ * not `.claude/skills/write-tests/SKILL.md`, whose name is the skill's own. A folder's words
+ * are split at `-`, `_`, `.` and capitals (`XMLTest`), so `latest` or `attestation` are not tests.
+ */
+function isTestData(path: string): boolean {
+  return path
+    .split('/')
+    .slice(0, -2)
+    .some((folder) => folder.split(WORD_BREAK).some((word) => TEST_WORDS.has(word.toLowerCase())));
 }
 
 /**
