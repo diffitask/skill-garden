@@ -9,7 +9,15 @@
 
 ## Portable page
 - `npm run build:web` produces a self-contained `skill-atlas.html` to open directly in a browser. No server, port forwarding, CDN scripts, or package installation is needed to use the generated file.
-- The portable page scans public GitHub repositories directly using the same scanner, without a token. An internet connection is required; API failures and rate limits appear in the page.
+- The portable page scans public GitHub repositories directly using the same scanner, optionally with a GitHub personal access token. An internet connection is required; API failures and rate limits appear in the page.
 - Include styles, scanner, parser, and interaction code in the HTML. It supports skill selection and full original document contents, just like the server view.
 
 - Both views use the analysis rules for skill copies and test data: copies count as one skill, and test data is excluded from the skill list and file reads. Regenerate the portable HTML whenever the scanner changes.
+
+## Scan failures and rate limits
+- A failed scan shows a prominent red error panel with an alert role, focus, a clear heading, and a Try again button. Progress and successful completion remain in the status line.
+- For rate limits, explain that GitHub temporarily limited requests. In the portable page, offer waiting or adding a token through an Add GitHub token button that opens and focuses GitHub access. Do not tell HTML users to set an environment variable.
+- GitHub access is available only in the portable page: a password field, a link to create a token, and a statement that it is sent only to GitHub and never saved. Keep it in the current tab only, never in storage, URLs, generated HTML, or error messages.
+- Optional browser tokens authenticate GitHub API requests while keeping tree discovery (no code search). Public file contents are fetched without the token. Without a token, anonymous scans still work when GitHub allows them.
+- After supplying a token, Try again repeats the scan of the entered repository and clears the error on success. A rejected token has an actionable message; an exhausted authenticated limit asks the user to wait rather than promising a token will bypass it.
+- The server view keeps its token on the server and gives server-specific rate-limit guidance.

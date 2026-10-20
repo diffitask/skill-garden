@@ -3,8 +3,8 @@ import { skillLink } from './core/model.ts';
 import { scan } from './core/scan.ts';
 import './web/app.js';
 
-async function scanRepository(input: string) {
-  const source = await openGitHub(input, { fetch });
+async function scanRepository(input: string, token?: string) {
+  const source = await openGitHub(input, { fetch, token: token || undefined, discovery: 'tree' });
   const contents = new Map<string, string>();
   const result = await scan({ ...source, read: async (path) => {
     const bytes = await source.read(path);

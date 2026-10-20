@@ -26,3 +26,8 @@ Set `PORT` to change the port, and optionally `GITHUB_TOKEN` for private reposit
 For a version that needs no server or port setup, open **skill-atlas.html** directly
 in your browser. It browses public repositories and needs an internet connection.
 Regenerate the file with `npm run build:web` after changing the UI or scanner.
+
+If GitHub reports a request limit in the portable page, open **GitHub access**,
+paste a personal access token, then click **Try again**. The token is sent only to
+GitHub and kept in the current tab; it is never saved. You can also wait for
+GitHub's limit to reset and retry without a token.

@@ -6,6 +6,16 @@ const results = document.querySelector('#results');
 const empty = document.querySelector('#empty');
 const warnings = document.querySelector('#warnings');
 const list = document.querySelector('#skills');
+const errorPanel = document.querySelector('#scan-error');
+const access = document.querySelector('#github-access');
+const tokenInput = document.querySelector('#github-token');
+const addToken = document.querySelector('#add-token');
+
+document.querySelector('#retry').addEventListener('click', () => form.requestSubmit());
+addToken.addEventListener('click', () => {
+  access.open = true;
+  tokenInput.focus();
+});
 
 function selectSkill(skill, item) {
   for (const sibling of list.children) sibling.removeAttribute('aria-current');
@@ -23,6 +33,8 @@ form.addEventListener('submit', async (event) => {
   input.disabled = true;
   form.setAttribute('aria-busy', 'true');
   status.textContent = 'Scanning the repository and reading its skills…';
+  errorPanel.hidden = true;
+  tokenInput.disabled = true;
   results.hidden = true;
   empty.hidden = true;
   warnings.hidden = true;
@@ -54,17 +66,34 @@ form.addEventListener('submit', async (event) => {
     results.hidden = false;
     selectSkill(data.skills[0], list.firstElementChild);
   } catch (error) {
-    status.textContent = error instanceof Error ? error.message : 'Unable to scan the repository.';
+    const message = error instanceof Error ? error.message : 'Unable to scan the repository.';
+    const limited = /rate limit/i.test(message);
+    const portable = typeof globalThis.skillAtlasScan === 'function';
+    document.querySelector('#error-title').textContent = limited ? 'GitHub request limit reached' : 'Repository scan failed';
+    document.querySelector('#error-message').textContent = limited
+      ? (portable
+        ? (tokenInput.value.trim()
+          ? 'GitHub has temporarily limited requests for this token. Wait for the limit to reset, then try again.'
+          : 'GitHub has temporarily limited requests from your connection. Wait for the limit to reset, or add a GitHub token and try again.')
+        : 'GitHub has temporarily limited requests. Wait for the limit to reset, or restart the server with GITHUB_TOKEN set.')
+      : (portable && /rejected the token/i.test(message)
+        ? 'GitHub rejected this token. Replace or remove it in GitHub access, then try again.'
+        : message);
+    addToken.hidden = !portable || !limited || Boolean(tokenInput.value.trim());
+    status.textContent = 'Scan failed. See the error below.';
+    errorPanel.hidden = false;
+    errorPanel.focus();
   } finally {
     button.disabled = false;
     input.disabled = false;
+    tokenInput.disabled = false;
     form.removeAttribute('aria-busy');
   }
 });
 
 async function loadRepository(repository) {
   // The portable HTML supplies a direct GitHub scanner; the server view uses its API.
-  if (globalThis.skillAtlasScan) return globalThis.skillAtlasScan(repository);
+  if (globalThis.skillAtlasScan) return globalThis.skillAtlasScan(repository, tokenInput.value.trim());
   const response = await fetch(`/api/scan?repository=${encodeURIComponent(repository)}`);
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'Unable to scan the repository.');
