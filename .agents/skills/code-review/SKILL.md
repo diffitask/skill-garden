@@ -1,5 +1,5 @@
 ---
-name: code0review
+name: code-review
 description: Review code changes and produce short inline comments with precise locations and reproduction steps.
 ---
 
