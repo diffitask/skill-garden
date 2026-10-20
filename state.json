@@ -2,7 +2,7 @@
   "version": 1,
   "prs": {
     "17": {
-      "active": null,
+      "active": "8edc1e67f47e0f9b0151d268a5b54a90096bdcaf37166d79da110ce5573cb15d",
       "batches": [
         {
           "id": "859e7d78a50e692ad10a35eb687ce2a35365dce8390e7fcaad75aba0b887d1ab",
@@ -21,9 +21,24 @@
           "worker_token": "aba758d3-27ad-45ee-becd-0ddcc8919de5",
           "started_at": "2026-10-20T14:32:28.971Z",
           "finished_at": "2026-10-20T14:34:50.570Z"
+        },
+        {
+          "id": "8edc1e67f47e0f9b0151d268a5b54a90096bdcaf37166d79da110ce5573cb15d",
+          "head_sha": "c682be4850c941b9dd469afb97acc304f042922d",
+          "feedback": [
+            {
+              "kind": "issue_comment",
+              "id": 6293809629,
+              "version": "e3b648c9f70604b60f7c7d19919ef915c76697130f7f2e616874c94c2f89636d",
+              "updated_at": "2026-10-20T14:54:53Z",
+              "url": "https://github.com/diffitask/ai-workshop-2026/pull/17#issuecomment-6293809629"
+            }
+          ],
+          "status": "dispatching",
+          "created_at": "2026-10-20T14:57:06.215Z"
         }
       ]
     }
   },
-  "revision": "6f4db6ba-798e-4927-a4d7-223052a76f67"
+  "revision": "73a0e2b5-27b5-4ef4-9194-fc7cab1ec5f9"
 }
