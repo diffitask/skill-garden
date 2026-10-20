@@ -17,13 +17,7 @@ export async function publishReview({ github, context, env }) {
   if (message.length > 60000) message = `${message.slice(0, 60000)}\n\nReview truncated; see the workflow log.`;
   const body = `${marker}\n## Automated code review\n\nCommit: ${env.PR_HEAD_SHA}\n\n${message}${runUrl ? `\n\n[Automation run](${runUrl})` : ''}`;
   const params = { ...context.repo, issue_number: number };
-  const comments = await github.paginate(github.rest.issues.listComments, { ...params, per_page: 100 });
-  const existing = comments.find((comment) => comment.user?.type === 'Bot' && comment.body?.startsWith(marker));
-  if (existing) {
-    return await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body });
-  } else {
-    return await github.rest.issues.createComment({ ...params, body });
-  }
+  return await github.rest.issues.createComment({ ...params, body });
 }
 
 // The Air environment provides GitHub CLI authentication through its GitHub integration.
@@ -42,18 +36,8 @@ export async function runPublisher(env, request) {
     rest: {
       pulls: { get: async ({ pull_number }) => ({ data: await request('GET', `${endpoint}/pulls/${pull_number}`) }) },
       issues: {
-        listComments: async ({ issue_number, page, per_page }) => request('GET', `${endpoint}/issues/${issue_number}/comments?per_page=${per_page}&page=${page}`),
         createComment: async ({ issue_number, body }) => request('POST', `${endpoint}/issues/${issue_number}/comments`, { body }),
-        updateComment: async ({ comment_id, body }) => request('PATCH', `${endpoint}/issues/comments/${comment_id}`, { body }),
       },
-    },
-    paginate: async (method, params) => {
-      const comments = [];
-      for (let page = 1; ; page++) {
-        const batch = await method({ ...params, page });
-        comments.push(...batch);
-        if (batch.length < params.per_page) return comments;
-      }
     },
   };
   return publishReview({ github, context: { repo: { owner, repo } }, env });
