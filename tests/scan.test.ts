@@ -11,6 +11,7 @@ import { test } from 'node:test';
 import { openGitHub } from '../src/core/github.ts';
 import { parseSkill } from '../src/core/parse.ts';
 import { replay } from '../src/core/replay.ts';
+import { scan } from '../src/core/scan.ts';
 import { atlas, CLI, EXAMPLE_COMMIT, FIXTURE } from './helpers.ts';
 
 const fixture = await atlas(['scan', FIXTURE]);
@@ -48,12 +49,58 @@ test('./fixture: every skill, sorted by name, linked to its file, with a warning
       "code-style — Follow the project's code style.",
       `  ${root}/.github/skills/code-style/SKILL.md`,
       'commits — Write commit messages the way this repository does.',
-      `  ${root}/.claude/skills/commits/SKILL.md`,
+      `  ${root}/.agents/skills/commits/SKILL.md`,
+      '  also in .claude/skills/commits/SKILL.md',
       'release-checklist',
       `  ${root}/.agents/skills/release-checklist/SKILL.md`,
     ].join('\n'),
   );
   assert.match(fixture.stderr, /^warning: \.agents\/skills\/release-checklist\/SKILL\.md: malformed front matter: /);
+});
+
+test('a skill in any agents\' folders side by side → one skill, from .agents, with the others as copies', async () => {
+  const commit = EXAMPLE_COMMIT;
+  const paths = [
+    '.cursor/skills/deploy/SKILL.md',
+    '.opencode/skill/deploy/SKILL.md',
+    'agent/skills/deploy/SKILL.md',
+    'docs/skills/deploy/SKILL.md',
+    'plugins/web/.claude/skills/lint/SKILL.md',
+    'plugins/web/.gemini/skills/lint/SKILL.md',
+    'plugins/web/.agents/skills/lint/SKILL.md',
+    'plugins/api/.claude/skills/lint/SKILL.md',
+  ];
+  const listed = ['.cursor/skills/deploy', 'docs/skills/deploy', 'plugins/web/.agents/skills/lint', 'plugins/api/.claude/skills/lint'];
+  const github = replay({
+    'https://api.github.com/repos/JetBrains/copies': { status: 200, body: { full_name: 'JetBrains/copies', default_branch: 'main' } },
+    'https://api.github.com/repos/JetBrains/copies/commits/main': { status: 200, body: { sha: commit } },
+    [`https://api.github.com/repos/JetBrains/copies/git/trees/${commit}?recursive=1`]: {
+      status: 200,
+      body: { truncated: false, tree: paths.map((path) => ({ path, mode: '100644', type: 'blob', sha: '0' })) },
+    },
+    ...Object.fromEntries(
+      listed.map((directory) => [
+        `https://raw.githubusercontent.com/JetBrains/copies/${commit}/${directory}/SKILL.md`,
+        { status: 200, body: `---\nname: ${directory.split('/').at(-1)}\ndescription: A skill.\n---\n` },
+      ]),
+    ),
+  });
+  const result = await scan(await openGitHub('https://github.com/JetBrains/copies', { fetch: github }));
+  assert.deepEqual(result.warnings, []);
+  assert.deepEqual(
+    result.skills.map(({ path, copies }) => ({ path, copies })),
+    [
+      // Not in .agents: the first by path. docs/ is not an agent's folder.
+      { path: '.cursor/skills/deploy/SKILL.md', copies: ['.opencode/skill/deploy/SKILL.md', 'agent/skills/deploy/SKILL.md'] },
+      { path: 'docs/skills/deploy/SKILL.md', copies: [] },
+      // Another place in the repository: another skill.
+      { path: 'plugins/api/.claude/skills/lint/SKILL.md', copies: [] },
+      {
+        path: 'plugins/web/.agents/skills/lint/SKILL.md',
+        copies: ['plugins/web/.claude/skills/lint/SKILL.md', 'plugins/web/.gemini/skills/lint/SKILL.md'],
+      },
+    ],
+  );
 });
 
 test('the CLI prints the result at once and stores nothing', (t) => {
