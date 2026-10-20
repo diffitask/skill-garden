@@ -21,3 +21,9 @@
 - Optional browser tokens authenticate GitHub API requests while keeping tree discovery (no code search). Public file contents are fetched without the token. Without a token, anonymous scans still work when GitHub allows them.
 - After supplying a token, Try again repeats the scan of the entered repository and clears the error on success. A rejected token has an actionable message; an exhausted authenticated limit asks the user to wait rather than promising a token will bypass it.
 - The server view keeps its token on the server and gives server-specific rate-limit guidance.
+
+## Readable skill summary
+- Show a prominent skill name and GitHub link above a summary split into titled blocks. The first descriptive sentence is What it does; additional descriptive sentences are Details. Explicit Use when/for/to clauses appear under When to use, and explicit compatibility or caution clauses under Compatibility & cautions. Omit empty blocks.
+- Preserve the original wording, version numbers, and every sentence. Recognize a caution clause after a semicolon (for example, “for older 0.x versions”) without inventing requirements or summaries. Unrecognized prose stays in What it does / Details.
+- Use larger text and a highlighted background for What it does, separate cards for usage and cautions, and a single-column layout on narrow screens. Render all description content as plain text.
+- Put the unmodified document and path in an expandable Full SKILL.md section, collapsed initially and when changing skills. Missing descriptions show an explicit fallback pointing to the full document.

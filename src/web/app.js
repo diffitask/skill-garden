@@ -19,7 +19,8 @@ function selectSkill(skill, item) {
   for (const sibling of list.children) sibling.removeAttribute('aria-current');
   item.setAttribute('aria-current', 'true');
   document.querySelector('#skill-name').textContent = skill.name;
-  document.querySelector('#description').textContent = skill.description;
+  renderDescription(skill.description);
+  document.querySelector('#full-document').open = false;
   document.querySelector('#path').textContent = skill.path;
   document.querySelector('#content').textContent = skill.content;
   document.querySelector('#source').href = skill.link;
@@ -96,4 +97,58 @@ async function loadRepository(repository) {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'Unable to scan the repository.');
   return data;
+}
+
+/** Arrange the original description into sections without generating new claims. */
+function renderDescription(description) {
+  const container = document.querySelector('#description');
+  container.replaceChildren();
+  if (!description.trim()) {
+    const fallback = document.createElement('p');
+    fallback.className = 'description-missing';
+    fallback.textContent = 'No description provided. Open the full SKILL.md for instructions.';
+    container.append(fallback);
+    return;
+  }
+  // Sentence boundaries retain version numbers such as 0.61.0 and 1.0.
+  const sentences = typeof Intl.Segmenter === 'function'
+    ? [...new Intl.Segmenter(undefined, { granularity: 'sentence' }).segment(description)].map((part) => part.segment.trim())
+    : description.split(/(?<=[.!?])\s+(?=[A-Z])/);
+  const groups = { overview: [], details: [], usage: [], cautions: [] };
+  for (const sentence of sentences) {
+    // Only explicit qualifiers create a caution section; keep every word.
+    const parts = sentence.split(/(?<=;)\s+(?=(?:for older|for newer|requires?\b|warning\b|caution\b|not for\b))/i);
+    for (const part of parts) {
+      if (/^(?:use (?:when|for|to)|when to use|useful (?:when|for)|activate when|trigger when)\b/i.test(part)) groups.usage.push(part);
+      else if (/^(?:for older|for newer|requires?\b|warning\b|caution\b|note:|not for\b|only\b|limitations?:)/i.test(part)) groups.cautions.push(part);
+      else if (!groups.overview.length) groups.overview.push(part);
+      else groups.details.push(part);
+    }
+  }
+  const sections = [
+    ['overview', 'What it does'], ['details', 'Details'],
+    ['usage', 'When to use'], ['cautions', 'Compatibility & cautions'],
+  ];
+  for (const [key, title] of sections) {
+    if (!groups[key].length) continue;
+    const section = document.createElement('section');
+    section.className = `summary-block summary-${key}`;
+    const heading = document.createElement('h3');
+    heading.textContent = title;
+    section.append(heading);
+    if (groups[key].length === 1) {
+      const paragraph = document.createElement('p');
+      paragraph.textContent = groups[key][0];
+      section.append(paragraph);
+    } else {
+      const list = document.createElement('ul');
+      for (const text of groups[key]) {
+        const item = document.createElement('li');
+        item.textContent = text;
+        list.append(item);
+      }
+      section.append(list);
+    }
+    container.append(section);
+  }
 }

@@ -15,7 +15,7 @@ const files = new Map([
   ['skills/broken/SKILL.md', '---\nname: [broken\n---\n# Broken\n'],
 ]);
 
-async function start() {
+async function start(repositoryFiles = files) {
   const reads: string[] = [];
   const server = createWebServer({ open: async (input): Promise<Source> => {
     const name = input.split('/').at(-1)!;
@@ -24,8 +24,8 @@ async function start() {
     if (name === 'slow') await new Promise((resolve) => setTimeout(resolve, 250));
     return {
       repository: { id: `owner/${name}`, organization: 'owner', name, url: `https://github.com/owner/${name}`, commit: 'abc123456789' },
-      warnings: [], paths: name === 'empty' ? [] : [...files.keys()],
-      read: async (path) => { reads.push(path); return new TextEncoder().encode(files.get(path)!); },
+      warnings: [], paths: name === 'empty' ? [] : [...repositoryFiles.keys()],
+      read: async (path) => { reads.push(path); return new TextEncoder().encode(repositoryFiles.get(path)!); },
     };
   } });
   server.listen(0, '127.0.0.1');
@@ -130,4 +130,61 @@ test('web view integrates submission, loading, selection, safe text, warnings, e
   assert.equal(element('#results').hidden, false);
   assert.equal(element('#scan-error').hidden, true);
   assert.deepEqual(errors, []);
+});
+
+const migrationDescription = 'Migrates a Kotlin project from Exposed 0.61.0 to Exposed 1.0. Scans Kotlin sources and build files, applies the mechanical changes documented in the official 1.0 migration guide (package renames, JDBC module moves, SqlExpressionBuilder lambda → top-level imports, build dependency bumps), and produces a report of items that need manual review. Use when the user wants to upgrade an existing Exposed 0.61.0 project to 1.0; for older 0.x versions the skill emits a compatibility warning and proceeds only with user confirmation.';
+
+test('skill summary presents the migration example in readable blocks and retains original instructions when switching skills', async (t) => {
+  const descriptions = new Map([
+    ['migrate-to-1.0', migrationDescription],
+    ['plain', 'Shows <img src=x onerror=alert(1)> as text. Keeps all details.'],
+    ['missing', ''],
+    ['usage-only', 'Use when reviewing a change.'],
+  ]);
+  const documents = new Map([...descriptions].map(([name, description]) => [
+    `skills/${name}/SKILL.md`, `---\nname: ${name}\ndescription: ${JSON.stringify(description)}\n---\n# Original instructions\n`,
+  ]));
+  const { server, base } = await start(documents);
+  t.after(() => server.close());
+  const dom = await JSDOM.fromURL(base, {
+    resources: 'usable', runScripts: 'dangerously',
+    beforeParse(window) { window.fetch = (input, init) => fetch(new URL(String(input), base), init); },
+  });
+  t.after(() => dom.window.close());
+  await new Promise((resolve) => dom.window.addEventListener('load', resolve, { once: true }));
+  const document = dom.window.document;
+  document.querySelector<HTMLInputElement>('#repository')!.value = 'https://github.com/owner/repo';
+  const form = document.querySelector('form')!;
+  form.dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  const deadline = Date.now() + 5000;
+  while (form.hasAttribute('aria-busy')) {
+    if (Date.now() > deadline) throw new Error('Summary scan did not finish');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.equal(document.querySelector('#skill-name')!.textContent, 'migrate-to-1.0');
+  assert.deepEqual([...document.querySelectorAll('#description h3')].map((heading) => heading.textContent), [
+    'What it does', 'Details', 'When to use', 'Compatibility & cautions',
+  ]);
+  assert.equal(document.querySelector('.summary-overview p')!.textContent, 'Migrates a Kotlin project from Exposed 0.61.0 to Exposed 1.0.');
+  assert.match(document.querySelector('.summary-details p')!.textContent!, /^Scans Kotlin sources/);
+  assert.match(document.querySelector('.summary-usage p')!.textContent!, /^Use when.*0.61.0 project to 1.0;/);
+  assert.match(document.querySelector('.summary-cautions p')!.textContent!, /^for older 0.x versions.*only with user confirmation/);
+  assert.equal([...document.querySelectorAll('#description p, #description li')].map((part) => part.textContent).join(' '), migrationDescription);
+  const full = document.querySelector<HTMLDetailsElement>('#full-document')!;
+  assert.equal(full.open, false);
+  full.querySelector('summary')!.click();
+  assert.equal(full.open, true);
+  assert.equal(document.querySelector('#content')!.textContent, documents.get('skills/migrate-to-1.0/SKILL.md'));
+  const select = (name: string) => [...document.querySelectorAll<HTMLButtonElement>('#skills button')]
+    .find((button) => button.querySelector('strong')!.textContent === name)!.click();
+  select('plain');
+  assert.equal(full.open, false);
+  assert.equal(document.querySelectorAll('.summary-usage, .summary-cautions').length, 0);
+  assert.equal(document.querySelector('#description img'), null);
+  assert.equal(document.querySelector('.summary-overview p')!.textContent, 'Shows <img src=x onerror=alert(1)> as text.');
+  select('missing');
+  assert.match(document.querySelector('#description')!.textContent!, /No description provided.*full SKILL.md/);
+  assert.equal(document.querySelectorAll('.summary-block').length, 0);
+  select('usage-only');
+  assert.deepEqual([...document.querySelectorAll('#description h3')].map((heading) => heading.textContent), ['When to use']);
 });

@@ -30,7 +30,21 @@
     <div id="warnings" role="status" hidden></div>
     <section id="results" hidden aria-label="Repository skills">
       <div class="results-heading"><h2 id="repo-name"></h2><span id="count" class="badge"></span></div>
-      <div class="workspace"><nav id="skills" aria-label="Skills"></nav><article id="detail"><div class="document-heading"><div><span class="eyebrow">SKILL DOCUMENT</span><h2 id="skill-name"></h2></div><a id="source" target="_blank" rel="noopener noreferrer">View on GitHub ↗</a></div><p id="description"></p><p id="path"></p><pre id="content" tabindex="0" aria-label="SKILL.md contents"></pre></article></div>
+      <div class="workspace">
+        <nav id="skills" aria-label="Skills"></nav>
+        <article id="detail">
+          <div class="document-heading">
+            <div><span class="eyebrow">SKILL OVERVIEW</span><h2 id="skill-name"></h2></div>
+            <a id="source" target="_blank" rel="noopener noreferrer">View on GitHub ↗</a>
+          </div>
+          <div id="description" aria-label="Skill summary"></div>
+          <details id="full-document">
+            <summary>Full SKILL.md <span>Original instructions</span></summary>
+            <p id="path"></p>
+            <pre id="content" tabindex="0" aria-label="SKILL.md contents"></pre>
+          </details>
+        </article>
+      </div>
     </section>
     <section id="empty" class="empty"><span class="empty-icon" aria-hidden="true">⌘</span><h2 id="empty-title">Every skill has a story.</h2><p id="empty-message">Explore a repository to read its agent instructions, all in one place.</p></section>
   </main>
