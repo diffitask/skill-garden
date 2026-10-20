@@ -1,107 +1,16 @@
 {
-  "viewport": {
-    "width": 1280,
-    "height": 800
-  },
+  "title": "Skill Atlas: scan a repository and read its skills",
+  "viewport": { "width": 1280, "height": 800 },
   "steps": [
-    {
-      "name": "Landing page",
-      "action": "goto",
-      "url": "/",
-      "moment": true
-    },
-    {
-      "name": "Enter a repository",
-      "action": "fill",
-      "selector": "#repository",
-      "value": "https://github.com/demo/skills"
-    },
-    {
-      "name": "Start the scan",
-      "action": "click",
-      "selector": "#scan"
-    },
-    {
-      "name": "Scan results",
-      "action": "wait",
-      "selector": "#results",
-      "moment": true
-    },
-    {
-      "name": "Select another skill",
-      "action": "click",
-      "selector": "#skills button:nth-of-type(2)",
-      "moment": true
-    },
-    {
-      "name": "Open the full SKILL.md",
-      "action": "click",
-      "selector": "#full-document summary",
-      "moment": true
-    },
-    {
-      "name": "Enter a missing repository",
-      "action": "fill",
-      "selector": "#repository",
-      "value": "https://github.com/demo/missing"
-    },
-    {
-      "name": "Scan it",
-      "action": "click",
-      "selector": "#scan"
-    },
-    {
-      "name": "Scan error",
-      "action": "wait",
-      "selector": "#scan-error",
-      "moment": true,
-      "text": "not found"
-    },
-    {
-      "name": "Rate limit",
-      "action": "fill",
-      "selector": "#repository",
-      "value": "https://github.com/demo/limited"
-    },
-    {
-      "name": "Scan the limited repository",
-      "action": "click",
-      "selector": "#scan"
-    },
-    {
-      "name": "Rate limit error",
-      "action": "wait",
-      "selector": "#scan-error",
-      "moment": true,
-      "text": "limit"
-    },
-    {
-      "name": "Narrow screen",
-      "action": "viewport",
-      "width": 390,
-      "height": 844
-    },
-    {
-      "name": "Reload on a narrow screen",
-      "action": "goto",
-      "url": "/"
-    },
-    {
-      "name": "Enter the repository again",
-      "action": "fill",
-      "selector": "#repository",
-      "value": "https://github.com/demo/skills"
-    },
-    {
-      "name": "Scan on a narrow screen",
-      "action": "click",
-      "selector": "#scan"
-    },
-    {
-      "name": "Narrow screen results",
-      "action": "wait",
-      "selector": "#results",
-      "moment": true
-    }
+    { "name": "Landing page", "action": "goto", "url": "/", "note": "The start page: paste a GitHub repository link", "moment": true },
+    { "name": "Enter a repository", "action": "type", "selector": "#repository", "value": "https://github.com/demo/skills", "note": "Type a repository link" },
+    { "name": "Start the scan", "action": "click", "selector": "#scan", "note": "Click Explore repository" },
+    { "name": "Scan results", "action": "wait", "selector": "#results", "focus": "#skills", "note": "Every skill in the repository, sorted by name", "moment": true },
+    { "name": "Select a skill", "action": "click", "selector": "#skills button:nth-of-type(2)", "focus": "#detail", "note": "Selecting a skill shows its summary", "moment": true },
+    { "name": "Full SKILL.md", "action": "click", "selector": "#full-document summary", "focus": "#full-document", "note": "The original SKILL.md, unchanged", "moment": true },
+    { "name": "Back to the top", "action": "scroll", "selector": "#repository" },
+    { "name": "Enter a missing repository", "action": "type", "selector": "#repository", "value": "https://github.com/demo/missing", "note": "Now a repository that does not exist" },
+    { "name": "Scan it", "action": "click", "selector": "#scan" },
+    { "name": "Scan error", "action": "wait", "selector": "#scan-error", "text": "not found", "focus": "#scan-error", "note": "A clear error with a Try again button", "moment": true }
   ]
 }

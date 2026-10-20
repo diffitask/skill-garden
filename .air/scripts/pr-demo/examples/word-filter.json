@@ -1,0 +1,22 @@
+{
+  "title": "Filter the skill list by words (PR #16)",
+  "viewport": { "width": 1280, "height": 800 },
+  "steps": [
+    { "name": "Open Skill Atlas", "action": "goto", "url": "/" },
+    { "name": "Enter a repository", "action": "type", "selector": "#repository", "value": "https://github.com/demo/skills", "note": "Scan a repository with 6 skills" },
+    { "name": "Start the scan", "action": "click", "selector": "#scan" },
+    { "name": "New filter field", "action": "wait", "selector": "#results", "focus": ".skill-filter",
+      "note": "New: a filter field above the skill list", "beforeNote": "Before: the full list, no way to narrow it", "moment": true },
+    { "name": "Filter by a word", "action": "type", "selector": "#filter-skills", "value": "commit", "afterOnly": true,
+      "beforeNote": "Filtering is added by this PR, so the next steps are skipped here", "note": "Type a word to filter" },
+    { "name": "Only matching skills", "action": "wait", "selector": "#skills", "focus": "#skills", "afterOnly": true,
+      "note": "Only skills mentioning “commit” remain", "moment": true },
+    { "name": "Count shows the match", "action": "wait", "selector": "#count", "focus": "#count", "afterOnly": true,
+      "note": "The counter shows matches out of all: 2 of 6", "moment": true },
+    { "name": "Filter with no match", "action": "type", "selector": "#filter-skills", "value": "kubernetes", "afterOnly": true, "note": "A word no skill contains" },
+    { "name": "No matches message", "action": "wait", "selector": "#no-matches", "focus": "#no-matches", "afterOnly": true,
+      "note": "A clear message instead of an empty list", "moment": true },
+    { "name": "Clear the filter", "action": "type", "selector": "#filter-skills", "value": "", "afterOnly": true, "note": "Clearing the field brings every skill back" },
+    { "name": "All skills again", "action": "wait", "selector": "#skills button:nth-of-type(6)", "afterOnly": true, "focus": "#count", "note": "All 6 skills again" }
+  ]
+}

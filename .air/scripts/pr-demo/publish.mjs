@@ -27,39 +27,40 @@ const exists = (path) => access(path).then(() => true, () => false);
 /** The comment, and the files it references, relative to the output directory. */
 export async function composeComment(manifest, out, { head, base, runUrl }) {
   const attachments = [];
-  const lines = [marker(head), '## PR demo: before and after', '',
-    `The same scenario in the web view at the base \`${short(base)}\` and the head \`${short(head)}\`. Changed areas are outlined in red.`];
-  const changed = manifest.moments.filter((m) => m.status === 'changed');
-  const unavailable = manifest.moments.filter((m) => m.status === 'unavailable');
+  const shown = manifest.moments.filter((m) => m.status !== 'unchanged');
   const unchanged = manifest.moments.filter((m) => m.status === 'unchanged');
   const videos = ['before', 'after'].filter((label) => manifest[label].video);
-  const room = MAX_ATTACHMENTS - videos.length;
-  const pictured = [...changed, ...unavailable].filter((m) => m.image).slice(0, room);
+  const pictured = shown.filter((m) => m.image).slice(0, MAX_ATTACHMENTS - videos.length);
   for (const moment of pictured) if (!(await exists(join(out, moment.image)))) throw new Error(`Missing image: ${moment.image}`);
-  lines.push('', `### Changed moments (${changed.length})`);
-  if (!changed.length) lines.push('', 'No visual changes in the recorded moments.');
-  for (const moment of changed) {
-    lines.push('', `#### ${moment.name}`);
-    if (pictured.includes(moment)) {
-      lines.push('', `![${moment.name}: before and after, changes outlined](./${moment.image})`);
-      attachments.push(`./${moment.image}`);
-    } else lines.push('', 'Image omitted: GitHub allows 50 attachments per comment.');
+  const hint = (m) => m.note ?? m.beforeNote;
+  const lines = [marker(head), `## PR demo${manifest.title ? `: ${manifest.title}` : ''}`, '',
+    `The same steps before this PR (\`${short(base)}\`) and with it (\`${short(head)}\`). Each picture outlines one change in red.`];
+  lines.push('', '**What to look at**', '');
+  if (!shown.length) lines.push('No visible changes in the recorded moments.');
+  for (const m of shown) {
+    const kind = m.status === 'new' ? 'new' : m.status === 'unavailable' ? 'could not compare' : 'changed';
+    lines.push(`${m.number}. **${m.name}** (${kind})${hint(m) ? `: ${hint(m)}` : ''}`);
   }
-  if (unavailable.length) {
-    lines.push('', `### Not comparable (${unavailable.length})`);
-    for (const moment of unavailable) {
-      const reasons = ['before', 'after'].filter((label) => moment.errors[label]).map((label) => `${label}: ${quote(moment.errors[label])}`);
-      lines.push('', `#### ${moment.name}`, '', reasons.join('; ') || 'No screenshot in either revision.');
-      if (pictured.includes(moment)) {
-        lines.push('', `![${moment.name}](./${moment.image})`);
-        attachments.push(`./${moment.image}`);
-      }
+  if (unchanged.length) lines.push('', `Same as before: ${unchanged.map((m) => m.name).join(', ')}.`);
+  for (const m of shown) {
+    lines.push('', `### ${m.number}. ${m.name}`);
+    if (hint(m)) lines.push('', `> ${hint(m)}`);
+    if (m.status === 'unavailable') {
+      const reasons = ['before', 'after'].filter((label) => m.errors[label]).map((label) => `${label}: ${quote(m.errors[label])}`);
+      lines.push('', `Could not compare: ${reasons.join('; ') || 'no screenshot in either version'}.`);
     }
+    if (pictured.includes(m)) {
+      lines.push('', `![${m.name}: before and with this PR, the change outlined in red](./${m.image})`);
+      attachments.push(`./${m.image}`);
+    } else if (m.image) lines.push('', 'Image omitted: GitHub allows 50 attachments per comment.');
+    const notes = [];
+    if (m.autoFocus) notes.push('outlined automatically where the screens differ');
+    if (m.otherChanges) notes.push(`${m.otherChanges} more ${m.otherChanges === 1 ? 'area differs' : 'areas differ'} on this screen, see the video`);
+    if (notes.length) lines.push('', `_${notes.join('; ')}._`);
   }
-  if (unchanged.length) lines.push('', `### Unchanged (${unchanged.length})`, '', ...unchanged.map((m) => `- ${m.name}`));
-  lines.push('', '### Videos');
+  lines.push('', '### Videos', '', 'Captions point out what to watch; the cursor shows every click.');
   for (const [label, sha] of [['before', base], ['after', head]]) {
-    lines.push('', `**${label === 'before' ? 'Before' : 'After'}** (\`${short(sha)}\`)`, '');
+    lines.push('', `**${label === 'before' ? 'Before this PR' : 'With this PR'}** (\`${short(sha)}\`)`, '');
     const video = manifest[label].video;
     if (video && (await exists(join(out, video)))) {
       lines.push(`![](./${video})`);

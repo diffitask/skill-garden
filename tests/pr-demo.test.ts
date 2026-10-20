@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -70,6 +71,14 @@ test('scenarios are validated before recording', () => {
   assert.throws(() => validateScenario({ steps: [{ name: 'x', action: 'hover' }] }), /Unknown action/);
   assert.throws(() => validateScenario({ steps: [{ name: 'x', action: 'goto', url: 'https://example.com' }] }), /local url/);
   assert.throws(() => validateScenario({ steps: [{ name: 'a', action: 'goto', url: '/', moment: true }, { name: 'a', action: 'wait', moment: true }] }), /Duplicate moment/);
+  // Resizing mid-recording is what shrank the page into a corner of the video.
+  assert.throws(() => validateScenario({ steps: [{ name: 'Narrow', action: 'viewport', width: 390, height: 844 }] }), /fixed size/);
+  assert.throws(() => validateScenario({ steps: [{ name: 'x', action: 'click' }] }), /needs a selector/);
+  assert.throws(() => validateScenario({ steps: [{ name: 'x', action: 'wait', note: 'n'.repeat(91) }] }), /short hint/);
+  assert.throws(() => validateScenario({ steps: [{ name: 'x', action: 'wait', focus: 3 }] }), /focus must be a selector/);
+  for (const file of ['scenario.json', 'examples/word-filter.json']) {
+    validateScenario(JSON.parse(readFileSync(join(ROOT, '.air/scripts/pr-demo', file), 'utf8')));
+  }
 });
 
 /** A revision of the app: this repository's src with optional edits, sharing node_modules. */
@@ -84,17 +93,30 @@ async function revision(root: string, name: string, edit?: (dir: string) => Prom
 }
 
 const scenario = {
+  title: 'A new control',
   viewport: { width: 900, height: 700 },
   steps: [
-    { name: 'Landing page', action: 'goto', url: '/', moment: true },
-    { name: 'Enter a repository', action: 'fill', selector: '#repository', value: 'https://github.com/demo/skills' },
+    { name: 'Landing page', action: 'goto', url: '/', moment: true, note: 'The start page' },
+    { name: 'Enter a repository', action: 'type', selector: '#repository', value: 'https://github.com/demo/skills' },
     { name: 'Scan', action: 'click', selector: '#scan' },
-    { name: 'Results', action: 'wait', selector: '#results', moment: true },
-    { name: 'New control', action: 'click', selector: '#new-control', moment: true },
+    { name: 'Results', action: 'wait', selector: '#results', focus: '#skills', moment: true, note: 'The skill list' },
+    { name: 'New control', action: 'click', selector: '#new-control', focus: '#new-control', afterOnly: true, moment: true, note: 'New: a control' },
+    { name: 'Missing step', action: 'click', selector: '#nowhere', moment: true },
   ],
 };
 
-test('records both revisions: videos, changed, unchanged and unavailable moments, highlighted images, no credentials', { timeout: 180000 }, async (t) => {
+/** What the recorded page shows at a moment: the overlay must never be in a screenshot. */
+async function overlayVisible(file: string) {
+  const { chromium } = await import('playwright');
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  await page.setContent(`<img src="data:image/png;base64,${(await readFile(file)).toString('base64')}">`);
+  const size = await page.evaluate(() => [document.images[0].naturalWidth, document.images[0].naturalHeight]);
+  await browser.close();
+  return size;
+}
+
+test('records both revisions with hints, a cursor and spotlights; moments are changed, new, unchanged or unavailable; no credentials', { timeout: 240000 }, async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'pr-demo-test-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const leak = join(root, 'env.json');
@@ -103,7 +125,7 @@ test('records both revisions: videos, changed, unchanged and unavailable moments
     const html = join(dir, 'src/web/index.html');
     await writeFile(html, (await readFile(html, 'utf8'))
       .replace('Explore a repository’s skills.', 'Explore every skill.')
-      .replace('</form>', '<button id="new-control" type="button">New control</button></form>'));
+      .replace('<h2 id="repo-name"></h2>', '<h2 id="repo-name"></h2><button id="new-control" type="button">New control</button>'));
     const server = join(dir, 'src/server.ts');
     // The PR's server reports the environment it was given.
     await writeFile(server, `import { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(leak)}, JSON.stringify(process.env));\n${await readFile(server, 'utf8')}`);
@@ -111,24 +133,42 @@ test('records both revisions: videos, changed, unchanged and unavailable moments
   process.env.GITHUB_TOKEN = 'secret-token';
   t.after(() => { delete process.env.GITHUB_TOKEN; });
   const out = join(root, 'out');
-  const manifest = await record({ before, after, out, scenario, pace: 50, timeout: 1500 });
+  const manifest = await record({ before, after, out, scenario, speed: 0, timeout: 1500 });
 
+  assert.equal(manifest.title, 'A new control');
   for (const label of ['before', 'after'] as const) {
     assert.match(manifest[label].video, /^(before|after)\.(mp4|webm)$/);
     assert.ok((await readFile(join(out, manifest[label].video))).length > 1000);
   }
-  const [landing, results, control] = manifest.moments;
+  const [landing, results, control, missing] = manifest.moments;
+  assert.deepEqual(manifest.moments.map((m: any) => m.number), [1, 2, 3, 4]);
+  // No focus given: the detected change, one heading, is outlined automatically.
   assert.equal(landing.status, 'changed');
-  assert.ok(landing.regions.length >= 1);
-  assert.equal(results.name, 'Results');
-  assert.ok(['changed', 'unchanged'].includes(results.status)); // results scroll under the form
-  assert.equal(control.status, 'unavailable');
-  assert.match(control.errors.before, /Timeout|waiting/);
-  assert.equal(control.errors.after, null);
-  const width = async (moment: any) => decodePNG(await readFile(join(out, moment.image))).width;
-  assert.ok(await width(landing) > 2 * scenario.viewport.width, 'before and after side by side');
-  assert.ok(await width(control) > scenario.viewport.width, 'the after side next to a placeholder');
-  assert.deepEqual(manifest.before.steps.filter((s: any) => !s.ok).map((s: any) => s.name), ['New control']);
+  assert.equal(landing.autoFocus, true);
+  assert.ok(landing.focus.after.width < scenario.viewport.width / 2, 'outlines the heading, not the page');
+  assert.equal(landing.note, 'The start page');
+  // The author's focus: the element's box in both revisions.
+  assert.equal(results.autoFocus, false);
+  assert.ok(results.focus.before && results.focus.after);
+  // Added by the PR: skipped before, shown after.
+  assert.equal(control.status, 'new');
+  assert.equal(control.focus.before, null);
+  assert.ok(control.focus.after.width > 0);
+  assert.equal(control.errors.before, null);
+  assert.deepEqual(manifest.before.steps.find((s: any) => s.name === 'New control'), { name: 'New control', ok: false, skipped: true });
+  // A step that fails in both versions.
+  assert.equal(missing.status, 'unavailable');
+  assert.match(missing.errors.before, /Timeout|waiting/);
+  assert.equal(missing.image, null);
+  for (const moment of [landing, results, control].filter((m: any) => m.image)) {
+    const [width] = await overlayVisible(join(out, moment.image));
+    assert.ok(width > 1300, 'before and after side by side at 2x');
+  }
+  // Screenshots are 2x and taken with the overlay hidden: the badge corner matches a plain page.
+  const shot = decodePNG(await readFile(join(out, 'screens', 'after-01-landing-page.png')));
+  assert.equal(shot.width, 1800);
+  const corner = shot.data.subarray((shot.height - 30) * shot.width * 4 + 60 * 4, (shot.height - 30) * shot.width * 4 + 64 * 4);
+  assert.ok([...corner].every((value) => value > 200), 'no revision badge in the screenshot');
   assert.deepEqual(JSON.parse(await readFile(join(out, 'manifest.json'), 'utf8')), manifest);
 
   const env = JSON.parse(await readFile(leak, 'utf8'));
@@ -137,7 +177,7 @@ test('records both revisions: videos, changed, unchanged and unavailable moments
   assert.notEqual(env.HOME, process.env.HOME);
 
   // An identical recording has no changed moments and no images.
-  const same = await record({ before, after: before, out: join(root, 'same'), scenario: { ...scenario, steps: scenario.steps.slice(0, 4) }, pace: 50 });
+  const same = await record({ before, after: before, out: join(root, 'same'), scenario: { ...scenario, steps: scenario.steps.slice(0, 4) }, speed: 0 });
   assert.deepEqual(same.moments.map((m: any) => [m.status, m.image]), [['unchanged', null], ['unchanged', null]]);
 });
 
@@ -146,7 +186,7 @@ test('a revision whose app does not start has no video and unavailable moments; 
   t.after(() => rm(root, { recursive: true, force: true }));
   const before = await revision(root, 'before', (dir) => rm(join(dir, 'src/server.ts')));
   const after = await revision(root, 'after');
-  const manifest = await record({ before, after, out: join(root, 'out'), scenario: { ...scenario, steps: scenario.steps.slice(0, 1) }, pace: 50 });
+  const manifest = await record({ before, after, out: join(root, 'out'), scenario: { ...scenario, steps: scenario.steps.slice(0, 1) }, speed: 0 });
   assert.equal(manifest.before.video, null);
   assert.match(manifest.before.error, /exited|did not start/);
   assert.ok(manifest.after.video);
@@ -159,17 +199,21 @@ test('a revision whose app does not start has no video and unavailable moments; 
 const head = 'a'.repeat(40);
 const base = 'b'.repeat(40);
 const env = { DEMO_REPOSITORY: 'owner/repo', PR_NUMBER: '7', PR_HEAD_SHA: head, PR_BASE_SHA: base, DEMO_RUN_URL: 'https://air.example/run/1' };
+const none = { before: null, after: null };
 
 async function demoOutput(overrides: any = {}) {
   const out = await mkdtemp(join(tmpdir(), 'pr-demo-out-'));
   await mkdir(join(out, 'moments'));
-  for (const file of ['before.mp4', 'after.mp4', 'moments/01-landing.png', 'moments/03-new.png']) await writeFile(join(out, file), 'x');
+  for (const file of ['before.mp4', 'after.mp4', 'moments/01-filter.png', 'moments/03-new.png', 'moments/04-broken.png']) await writeFile(join(out, file), 'x');
   const manifest = {
+    title: 'Filter skills',
     before: { video: 'before.mp4', error: null }, after: { video: 'after.mp4', error: null },
     moments: [
-      { name: 'Landing', status: 'changed', regions: [{ x: 0, y: 0, width: 1, height: 1 }], image: 'moments/01-landing.png', errors: { before: null, after: null } },
-      { name: 'Results', status: 'unchanged', regions: [], image: null, errors: { before: null, after: null } },
-      { name: 'New', status: 'unavailable', regions: [], image: 'moments/03-new.png', errors: { before: 'Timeout `5000ms`\nexceeded', after: null } },
+      { number: 1, name: 'Filter field', note: 'New: a filter above the list', status: 'changed', autoFocus: false, otherChanges: 2, image: 'moments/01-filter.png', errors: none },
+      { number: 2, name: 'Results', note: null, status: 'unchanged', image: null, errors: none },
+      { number: 3, name: 'No matches', note: 'A clear message instead of an empty list', status: 'new', autoFocus: false, otherChanges: 0, image: 'moments/03-new.png', errors: none },
+      { number: 4, name: 'Broken', note: null, beforeNote: 'Old layout', status: 'unavailable', autoFocus: true, otherChanges: 0, image: 'moments/04-broken.png',
+        errors: { before: 'Timeout `5000ms`\nexceeded', after: null } },
     ],
     ...overrides,
   };
@@ -194,37 +238,40 @@ function fakeGh({ pr = {}, comments = [] as any[], fail = false } = {}) {
   return { gh, calls };
 }
 
-test('publishes one comment with highlighted moments inline, unchanged and unavailable moments named, and both videos as players', async () => {
+test('publishes one comment: a numbered list of what to look at, one outlined picture per change, and both videos as players', async () => {
   const out = await demoOutput();
   const { gh, calls } = fakeGh();
   const result = await publishDemo(env, out, gh);
-  assert.deepEqual(result, { url: 'https://github.com/owner/repo/pull/7#issuecomment-1', attachments: 4 });
+  assert.deepEqual(result, { url: 'https://github.com/owner/repo/pull/7#issuecomment-1', attachments: 5 });
   const comment = calls.at(-1)!;
   assert.equal(comment.cwd, out);
   assert.deepEqual(comment.args, ['pr', 'comment', '7', '-R', 'owner/repo', '--body-file', './comment.md',
-    '--attach', './moments/01-landing.png', '--attach', './moments/03-new.png', '--attach', './before.mp4', '--attach', './after.mp4']);
+    '--attach', './moments/01-filter.png', '--attach', './moments/03-new.png', '--attach', './moments/04-broken.png',
+    '--attach', './before.mp4', '--attach', './after.mp4']);
   const body = await readFile(join(out, 'comment.md'), 'utf8');
-  assert.ok(body.startsWith(`<!-- air-pr-demo:${head} -->`));
-  assert.match(body, /base `bbbbbbb` and the head `aaaaaaa`/);
-  assert.match(body, /### Changed moments \(1\)\n\n#### Landing\n\n!\[Landing: before and after, changes outlined\]\(\.\/moments\/01-landing\.png\)/);
-  assert.match(body, /### Unchanged \(1\)\n\n- Results/);
-  assert.match(body, /#### New\n\nbefore: `Timeout 5000ms exceeded`/, 'PR error text is one line with no markup');
+  assert.ok(body.startsWith(`<!-- air-pr-demo:${head} -->\n## PR demo: Filter skills`));
+  assert.match(body, /before this PR \(`bbbbbbb`\) and with it \(`aaaaaaa`\)/);
+  assert.match(body, /\*\*What to look at\*\*\n\n1\. \*\*Filter field\*\* \(changed\): New: a filter above the list\n3\. \*\*No matches\*\* \(new\): A clear message instead of an empty list\n4\. \*\*Broken\*\* \(could not compare\): Old layout\n\nSame as before: Results\./);
+  assert.match(body, /### 1\. Filter field\n\n> New: a filter above the list\n\n!\[Filter field: before and with this PR, the change outlined in red\]\(\.\/moments\/01-filter\.png\)\n\n_2 more areas differ on this screen, see the video\._/);
+  assert.match(body, /### 4\. Broken\n\n> Old layout\n\nCould not compare: before: `Timeout 5000ms exceeded`\./, 'PR error text is one line with no markup');
+  assert.match(body, /_outlined automatically where the screens differ\._/);
   // A video alone in its paragraph is what gh turns into a player.
-  assert.match(body, /\*\*Before\*\* \(`bbbbbbb`\)\n\n!\[\]\(\.\/before\.mp4\)\n/);
-  assert.match(body, /\*\*After\*\* \(`aaaaaaa`\)\n\n!\[\]\(\.\/after\.mp4\)\n/);
+  assert.match(body, /\*\*Before this PR\*\* \(`bbbbbbb`\)\n\n!\[\]\(\.\/before\.mp4\)\n/);
+  assert.match(body, /\*\*With this PR\*\* \(`aaaaaaa`\)\n\n!\[\]\(\.\/after\.mp4\)\n/);
   assert.match(body, /\[Automation run\]\(https:\/\/air\.example\/run\/1\)/);
 });
 
 test('a missing video is stated, and no changes are reported as such', async () => {
   const out = await demoOutput({
     before: { video: null, error: 'The app exited with code 1' },
-    moments: [{ name: 'Landing', status: 'unchanged', regions: [], image: null, errors: { before: null, after: null } }],
+    moments: [{ number: 1, name: 'Landing', status: 'unchanged', image: null, errors: none }],
   });
   const { gh, calls } = fakeGh();
   await publishDemo(env, out, gh);
   const body = await readFile(join(out, 'comment.md'), 'utf8');
-  assert.match(body, /No visual changes in the recorded moments\./);
-  assert.match(body, /\*\*Before\*\* \(`bbbbbbb`\)\n\nNo video: `The app exited with code 1`/);
+  assert.match(body, /No visible changes in the recorded moments\./);
+  assert.match(body, /Same as before: Landing\./);
+  assert.match(body, /\*\*Before this PR\*\* \(`bbbbbbb`\)\n\nNo video: `The app exited with code 1`/);
   assert.deepEqual(calls.at(-1)!.args.filter((a) => a.startsWith('./') && a !== './comment.md'), ['./after.mp4']);
 });
 
@@ -254,7 +301,7 @@ test('publication validates its inputs and propagates GitHub failures without re
     [{ PR_HEAD_SHA: 'abc' }, /PR_HEAD_SHA/], [{ PR_BASE_SHA: undefined }, /PR_BASE_SHA/], [{ DEMO_RUN_URL: 'http://air.example' }, /run URL/]] as const) {
     await assert.rejects(publishDemo({ ...env, ...change }, out, gh), message);
   }
-  await rm(join(out, 'moments/01-landing.png'));
+  await rm(join(out, 'moments/01-filter.png'));
   await assert.rejects(publishDemo(env, out, gh), /Missing image/);
   const failing = fakeGh({ fail: true });
   await assert.rejects(publishDemo(env, await demoOutput(), failing.gh), /upload refused/);
