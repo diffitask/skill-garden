@@ -19,6 +19,11 @@
 - Atomically reserve one active batch per PR before calling the webhook. Deduplicate
   feedback versions across batches, produce stable batch IDs independent of input
   order, allow other PRs to proceed, and permit at most three batches per PR.
+- When rechecking a reserved PR before dispatch, release the lock only if a
+  successful GitHub read confirms that the PR closed or its head changed. Access,
+  rate-limit, server, and transport errors propagate and retain the reservation for
+  inspection; a permission-masking 404 is not proof of a stale PR. Subsequent polls
+  return `busy`, without sending a webhook or consuming an additional round.
 - Send the webhook exactly once with `Authorization: ApiKey <token>`. Persist
   acceptance without overwriting a worker that already started or finished. A
   timeout or non-success response leaves an uncertain batch locked for inspection;

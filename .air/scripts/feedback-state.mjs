@@ -10,6 +10,7 @@ const positive = (value) => Number.isSafeInteger(value) && value > 0;
 const kinds = ['review', 'review_comment', 'issue_comment'];
 const activeStates = ['dispatching', 'dispatched', 'uncertain', 'running'];
 const terminalStates = ['completed', 'blocked'];
+class StalePRError extends Error {}
 
 function validateState(state) {
   if (state?.version !== 1 || !state.prs || typeof state.prs !== 'object' || Array.isArray(state.prs)) {
@@ -110,7 +111,7 @@ export function createCoordinator({ repository, request, sendWebhook, now = () =
   async function currentPR(payload) {
     target(payload);
     const pr = await request('GET', `${root}/pulls/${payload.pr_number}`);
-    if (pr.state !== 'open' || pr.head.sha !== payload.head_sha) throw new Error('PR closed or head changed');
+    if (pr.state !== 'open' || pr.head.sha !== payload.head_sha) throw new StalePRError('PR closed or head changed');
     if (pr.head.repo?.full_name !== repository) throw new Error('Fork PRs require a separate push policy');
     return pr;
   }
@@ -171,9 +172,11 @@ export function createCoordinator({ repository, request, sendWebhook, now = () =
       if (reservation.status !== 'reserved') return reservation;
       const outbound = { repository, pr_number: payload.pr_number, head_sha: payload.head_sha,
         batch_id: reservation.batch_id, feedback: reservation.feedback };
-      // Recheck after taking the lock. If validation fails, release without sending.
+      // Release only after a successful read proves the PR is stale. API failures
+      // (including permission-masking 404s) leave the reservation for inspection.
       try { await currentPR(payload); }
-      catch {
+      catch (error) {
+        if (!(error instanceof StalePRError)) throw error;
         await transaction((state) => {
           const pr = state.prs[payload.pr_number];
           const batch = pr.batches.find((b) => b.id === reservation.batch_id);

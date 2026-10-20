@@ -224,6 +224,26 @@ test('changes between reservation and delivery prevent dispatch; stale workers d
   assert.equal((await third.client.start(third.deliveries[0])).status, 'blocked');
 });
 
+test('access and transport failures on the second PR read preserve the reservation', async () => {
+  const errors = [fail(403), fail(404), fail(429), fail(502), new TypeError('Connection reset')];
+  for (const error of errors) {
+    const { client, api, deliveries } = await fixture();
+    let reads = 0;
+    api.setIntercept((method, path) => {
+      if (method === 'GET' && path === 'pulls/17' && ++reads === 2) throw error;
+    });
+    await assert.rejects(client.dispatch(payload()), (caught) => caught === error);
+    api.setIntercept(undefined);
+    const record = await client.status(17);
+    assert.equal(record.batches.length, 1);
+    assert.equal(record.batches[0].status, 'dispatching');
+    assert.equal(record.active, record.batches[0].id);
+    assert.equal((await client.dispatch(payload())).status, 'busy');
+    assert.equal((await client.status(17)).batches.length, 1);
+    assert.equal(deliveries.length, 0);
+  }
+});
+
 test('timeouts and HTTP failures retain locks, prevent resends, and require explicit recovery', async () => {
   for (const mode of ['timeout', 'http']) {
     let attempts = 0;
