@@ -20,6 +20,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # The PR demo recorder's tests drive Chromium; ffmpeg is preinstalled on the runner.
+      - run: npx playwright install --with-deps chromium
       - run: npm run typecheck
       - run: npm test
       # The real CLI on the fixture repository, as a user would run it: it must exit 0.

@@ -31,3 +31,7 @@ If GitHub reports a request limit in the portable page, paste a personal access 
 into the **GitHub token (optional)** field below the repository URL, then click **Try again**. The token is sent only to
 GitHub and kept in the current tab; it is never saved. You can also wait for
 GitHub's limit to reset and retry without a token.
+
+Labeling a PR **AI: ready to merge** has Air record the web view before and after the PR
+and comment with both videos and highlighted before/after screenshots: see
+[spec/pr-demo.md](spec/pr-demo.md) and the [pr-demo skill](.agents/skills/pr-demo/SKILL.md).
