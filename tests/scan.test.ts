@@ -45,7 +45,7 @@ test('./fixture: every skill, sorted by name, linked to its file, with a warning
   assert.equal(
     fixture.stdout,
     [
-      'fixture · 3 skills',
+      'fixture · 4 skills',
       "code-style — Follow the project's code style.",
       `  ${root}/.github/skills/code-style/SKILL.md`,
       'commits — Write commit messages the way this repository does.',
@@ -53,6 +53,8 @@ test('./fixture: every skill, sorted by name, linked to its file, with a warning
       '  also in .claude/skills/commits/SKILL.md',
       'release-checklist',
       `  ${root}/.agents/skills/release-checklist/SKILL.md`,
+      'triage — Triage a new issue the way this repository does.',
+      `  ${root}/docs/workflows/triage/SKILL.md`,
     ].join('\n'),
   );
   assert.match(fixture.stderr, /^warning: \.agents\/skills\/release-checklist\/SKILL\.md: malformed front matter: /);
@@ -101,6 +103,47 @@ test('a skill in any agents\' folders side by side → one skill, from .agents, 
       },
     ],
   );
+});
+
+test('a large tree without a token → the listed part, wherever the skills are, the agents\' folders in full, a warning', async () => {
+  const commit = EXAMPLE_COMMIT;
+  const blob = (path: string) => ({ path, mode: '100644', type: 'blob', sha: '0' });
+  const tree = (path: string, sha: string) => ({ path, mode: '040000', type: 'tree', sha });
+  const raw = (path: string) => [
+    `https://raw.githubusercontent.com/JetBrains/large/${commit}/${path}`,
+    { status: 200, body: `---\nname: ${path.split('/').at(-2)}\ndescription: A skill.\n---\n` },
+  ];
+  const trees = `https://api.github.com/repos/JetBrains/large/git/trees`;
+  const github = replay({
+    'https://api.github.com/repos/JetBrains/large': { status: 200, body: { full_name: 'JetBrains/large', default_branch: 'main' } },
+    'https://api.github.com/repos/JetBrains/large/commits/main': { status: 200, body: { sha: commit } },
+    // GitHub stops listing at its limit: the triage workflow is in, .claude/skills only in part.
+    [`${trees}/${commit}?recursive=1`]: {
+      status: 200,
+      body: { truncated: true, tree: [blob('build/workflows/triage/SKILL.md'), blob('.claude/skills/commits/SKILL.md')] },
+    },
+    [`${trees}/${commit}`]: { status: 200, body: { truncated: false, tree: [tree('.claude', 'claude'), tree('build', 'build')] } },
+    [`${trees}/claude`]: { status: 200, body: { truncated: false, tree: [tree('skills', 'skills')] } },
+    [`${trees}/skills?recursive=1`]: {
+      status: 200,
+      body: { truncated: false, tree: [blob('commits/SKILL.md'), blob('review/SKILL.md')] },
+    },
+    ...Object.fromEntries(
+      ['build/workflows/triage/SKILL.md', '.claude/skills/commits/SKILL.md', '.claude/skills/review/SKILL.md'].map(raw),
+    ),
+  });
+  const result = await scan(await openGitHub('https://github.com/JetBrains/large', { fetch: github }));
+  assert.deepEqual(
+    result.skills.map(({ path, copies }) => ({ path, copies })),
+    [
+      { path: '.claude/skills/commits/SKILL.md', copies: [] },
+      { path: '.claude/skills/review/SKILL.md', copies: [] },
+      { path: 'build/workflows/triage/SKILL.md', copies: [] },
+    ],
+  );
+  assert.deepEqual(result.warnings, [
+    'the tree is too large to list at once; looked in the part GitHub listed and in .agents/skills, .claude/skills, .github/skills, agent/skills (GITHUB_TOKEN searches everywhere)',
+  ]);
 });
 
 test('the CLI prints the result at once and stores nothing', (t) => {
