@@ -1,6 +1,7 @@
 // The skill-atlas commands. The same code serves the Node CLI and the browser
 // terminal: everything that differs between them comes in through the context.
 import { AtlasError } from './core/errors.ts';
+import { filterSkills } from './core/filter.ts';
 import { fileLink, skillLink, type Repository, type Skill } from './core/model.ts';
 import { scan, type Source } from './core/scan.ts';
 
@@ -14,7 +15,8 @@ export type Context = {
 
 const usage = `Usage: skill-atlas <command>
 
-  scan <GitHub URL | directory>   find every SKILL.md in a repository and print it
+  scan <GitHub URL | directory> [--filter "words"]
+                                  find SKILL.md files, optionally matching name and description
   help                            show this help`;
 
 /** Runs one command; returns its exit code. */
@@ -33,9 +35,12 @@ export async function run(args: string[], context: Context): Promise<number> {
 }
 
 async function scanCommand(args: string[], context: Context) {
-  if (args.length !== 1) throw new AtlasError('Usage: skill-atlas scan <GitHub URL | directory>');
+  if (args.length !== 1 && !(args.length === 3 && args[1] === '--filter')) {
+    throw new AtlasError('Usage: skill-atlas scan <GitHub URL | directory> [--filter "words"]');
+  }
   const result = await scan(await context.open(args[0]));
-  printRepository(result.repository, result.skills, result.testData, context);
+  const skills = filterSkills(result.skills, args[2] ?? '');
+  printRepository(result.repository, skills, result.testData, context, Boolean(args[2]?.trim()));
   for (const warning of result.warnings) context.error(`warning: ${warning}`);
 }
 
@@ -44,10 +49,11 @@ async function scanCommand(args: string[], context: Context) {
  * in agents' folders first, then those elsewhere, each group under its heading. Last,
  * the test data, not counted: only its links, so a test folder taken wrongly shows.
  */
-function printRepository(repository: Repository, skills: Skill[], testData: string[], { print }: Context) {
+function printRepository(repository: Repository, skills: Skill[], testData: string[], { print }: Context, filtered = false) {
   print(`${repository.id} · ${count(skills.length)}`);
   printGroup("In agents' folders", repository, skills.filter((skill) => skill.inAgentFolder), print);
   printGroup('Elsewhere', repository, skills.filter((skill) => !skill.inAgentFolder), print);
+  if (filtered && !skills.length) print('No skills match your filter');
   if (testData.length === 0) return;
   print(`Test data, not skills · ${testData.length} ${testData.length === 1 ? 'file' : 'files'}`);
   for (const path of testData) print(`  ${fileLink(repository, path)}`);

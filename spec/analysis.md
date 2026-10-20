@@ -32,6 +32,12 @@ Skill: id = `repo:path`, name, description, commit, copies, in an agent folder (
 - The link pins the *scanned commit*
 - Malformed front matter → a *warning*, the scan goes on
 - Unreachable repository → a clear message, exit code 1
+- Filter completed scan results by skill name and full description, case-insensitively.
+  Trim the query and split on whitespace; every term must be a literal substring of either
+  field, and terms may match different fields. Punctuation has no regex meaning. An empty
+  query shows all skills; a missing description is empty. Never search document contents,
+  paths, copies, or test data. Preserve order, classification, deduplication, pinned links,
+  test-data links, and scan warnings; filtering does not change which files are scanned.
 - Without a token, a tree too large for one GitHub answer: the files GitHub does list, plus
   `.agents/skills`, `.claude/skills`, `.github/skills` and `agent/skills` at the root in full,
   and a *warning* that skills may be missed

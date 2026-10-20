@@ -29,7 +29,9 @@
     </section>
     <div id="warnings" role="status" hidden></div>
     <section id="results" hidden aria-label="Repository skills">
-      <div class="results-heading"><h2 id="repo-name"></h2><span id="count" class="badge"></span></div>
+      <div class="results-heading"><h2 id="repo-name"></h2><span id="count" class="badge" role="status" aria-live="polite"></span></div>
+      <div class="skill-filter"><label for="filter-skills">Filter skills</label><input id="filter-skills" type="search" autocomplete="off" spellcheck="false" aria-controls="skills" aria-describedby="filter-help"><p id="filter-help" class="hint">Match every word in the skill name or description.</p></div>
+      <p id="no-matches" role="status" hidden>No skills match your filter</p>
       <div class="workspace">
         <nav id="skills" aria-label="Skills"></nav>
         <article id="detail">

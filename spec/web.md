@@ -7,6 +7,16 @@
 - Show an explicit empty state for no skills, scan warnings, and clear errors for invalid URLs, unavailable repositories, or GitHub rate limits. A failed scan can be retried.
 - Display a decorative pink flower beside Skill Atlas in the header, embedded in both views and hidden from assistive technology.
 - Serve the page, script, and stylesheet locally. Repository text is displayed as text, never executable markup. Support narrow screens and keyboard navigation.
+- Both views provide an accessible field labeled Filter skills for current results. Apply
+  the word-filter rules in [analysis.md](analysis.md) immediately on input, without rescanning,
+  file reads, or network requests. Show matching and total skill counts, preserving order,
+  deduplication, links, and scan warnings. Clear the filter when starting a new scan.
+- Keep the selected skill and its expanded document if it still matches; otherwise select
+  the first match and collapse its document. With no matches, show No skills match your filter,
+  clear and hide the detail pane, and keep the filter available. Clearing the filter restores
+  all skills and selects the first if selection was cleared. Tab/Enter and Arrow Up/Down,
+  Home/End navigation work with the matching list. A repository with no skills retains its
+  distinct No skills found state.
 
 ## Portable page
 - `npm run build:web` produces a self-contained `skill-atlas.html` to open directly in a browser. No server, port forwarding, CDN scripts, or package installation is needed to use the generated file.

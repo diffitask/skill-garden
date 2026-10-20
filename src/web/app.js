@@ -9,6 +9,23 @@ const list = document.querySelector('#skills');
 const errorPanel = document.querySelector('#scan-error');
 const tokenInput = document.querySelector('#github-token');
 const addToken = document.querySelector('#add-token');
+const filterInput = document.querySelector('#filter-skills');
+const detail = document.querySelector('#detail');
+let allSkills = [];
+let selectedSkill = null;
+
+filterInput.addEventListener('input', renderSkills);
+list.addEventListener('keydown', (event) => {
+  const items = [...list.children];
+  const index = items.indexOf(event.target);
+  if (index < 0) return;
+  const next = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: items.length - 1 }[event.key];
+  if (next === undefined) return;
+  event.preventDefault();
+  const item = items[Math.max(0, Math.min(next, items.length - 1))];
+  item.focus();
+  item.click();
+});
 
 document.querySelector('#retry').addEventListener('click', () => form.requestSubmit());
 addToken.addEventListener('click', () => {
@@ -18,12 +35,50 @@ addToken.addEventListener('click', () => {
 function selectSkill(skill, item) {
   for (const sibling of list.children) sibling.removeAttribute('aria-current');
   item.setAttribute('aria-current', 'true');
+  detail.hidden = false;
+  if (selectedSkill === skill) return;
+  selectedSkill = skill;
   document.querySelector('#skill-name').textContent = skill.name;
   renderDescription(skill.description);
   document.querySelector('#full-document').open = false;
   document.querySelector('#path').textContent = skill.path;
   document.querySelector('#content').textContent = skill.content;
   document.querySelector('#source').href = skill.link;
+}
+
+function clearSelection() {
+  selectedSkill = null;
+  detail.hidden = true;
+  for (const id of ['skill-name', 'description', 'path', 'content']) document.getElementById(id).replaceChildren();
+  document.querySelector('#source').removeAttribute('href');
+  document.querySelector('#full-document').open = false;
+}
+
+function renderSkills() {
+  // Same literal, per-field matching as core/filter.ts; never search paths or contents.
+  const terms = filterInput.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const skills = allSkills.filter((skill) => {
+    const name = skill.name.toLowerCase();
+    const description = (skill.description ?? '').toLowerCase();
+    return terms.every((term) => name.includes(term) || description.includes(term));
+  });
+  document.querySelector('#count').textContent = `${skills.length} of ${allSkills.length} ${allSkills.length === 1 ? 'skill' : 'skills'}`;
+  document.querySelector('#no-matches').hidden = skills.length !== 0;
+  list.replaceChildren();
+  for (const skill of skills) {
+    const item = document.createElement('button');
+    item.type = 'button';
+    const name = document.createElement('strong');
+    name.textContent = skill.name;
+    const description = document.createElement('span');
+    description.textContent = skill.description || skill.path;
+    item.append(name, description);
+    item.addEventListener('click', () => selectSkill(skill, item));
+    list.append(item);
+  }
+  const selectedIndex = Math.max(0, skills.indexOf(selectedSkill));
+  if (skills.length) selectSkill(skills[selectedIndex], list.children[selectedIndex]);
+  else clearSelection();
 }
 
 form.addEventListener('submit', async (event) => {
@@ -38,10 +93,14 @@ form.addEventListener('submit', async (event) => {
   empty.hidden = true;
   warnings.hidden = true;
   list.replaceChildren();
+  allSkills = [];
+  filterInput.value = '';
+  clearSelection();
   try {
     const data = await loadRepository(input.value.trim());
     document.querySelector('#repo-name').textContent = data.repository.id;
-    document.querySelector('#count').textContent = `${data.skills.length} ${data.skills.length === 1 ? 'skill' : 'skills'}`;
+    allSkills = data.skills;
+    renderSkills();
     warnings.textContent = data.warnings.join('\n');
     warnings.hidden = data.warnings.length === 0;
     status.textContent = `Scanned ${data.repository.id} at commit ${data.repository.commit.slice(0, 7)}.`;
@@ -51,19 +110,7 @@ form.addEventListener('submit', async (event) => {
       document.querySelector('#empty-message').textContent = 'This repository has no SKILL.md files. Try another repository.';
       return;
     }
-    for (const skill of data.skills) {
-      const item = document.createElement('button');
-      item.type = 'button';
-      const name = document.createElement('strong');
-      name.textContent = skill.name;
-      const description = document.createElement('span');
-      description.textContent = skill.description || skill.path;
-      item.append(name, description);
-      item.addEventListener('click', () => selectSkill(skill, item));
-      list.append(item);
-    }
     results.hidden = false;
-    selectSkill(data.skills[0], list.firstElementChild);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to scan the repository.';
     const limited = /rate limit/i.test(message);
