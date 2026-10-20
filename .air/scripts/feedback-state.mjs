@@ -11,6 +11,7 @@ const kinds = ['review', 'review_comment', 'issue_comment'];
 const activeStates = ['dispatching', 'dispatched', 'uncertain', 'running'];
 const terminalStates = ['completed', 'blocked'];
 class StalePRError extends Error {}
+class StaleFeedbackError extends Error {}
 
 function validateState(state) {
   if (state?.version !== 1 || !state.prs || typeof state.prs !== 'object' || Array.isArray(state.prs)) {
@@ -99,7 +100,7 @@ export function createCoordinator({ repository, request, sendWebhook, now = () =
       if ((kind === 'issue_comment' ? original.issue_url : original.pull_request_url) !== expected || original.id !== id) {
         throw new Error('Feedback does not belong to the requested PR');
       }
-      if (kind === 'review' && original.state === 'DISMISSED') throw new Error('Review has been dismissed');
+      if (kind === 'review' && original.state === 'DISMISSED') throw new StaleFeedbackError('Review has been dismissed');
       const updated = original.updated_at ?? original.submitted_at;
       if (!updated || !Number.isFinite(Date.parse(updated)) || typeof original.body !== 'string') throw new Error('Incomplete feedback data');
       const version = hash([kind, id, updated, original.body, original.state ?? null]);
@@ -223,12 +224,11 @@ export function createCoordinator({ repository, request, sendWebhook, now = () =
       try {
         if (stored.head_sha !== payload.head_sha) throw new Error('Batch head mismatch');
         feedback = await fetchFeedback(payload.pr_number, stored.feedback);
-        if (hash(feedback) !== hash(stored.feedback)) throw new Error('Feedback changed');
+        if (hash(feedback) !== hash(stored.feedback)) throw new StaleFeedbackError('Feedback changed');
       } catch (error) {
-        // Only definitive stale/deleted feedback releases a reservation. Access or
-        // uncertain transport errors must not turn an unknown outcome into a retry.
-        if (error.status && error.status !== 404) throw error;
-        if (!error.status && !/Batch head|Feedback changed|dismissed/.test(error.message)) throw error;
+        // An HTTP error cannot prove deletion: GitHub may hide inaccessible
+        // feedback behind 404. Only a successful read can confirm staleness.
+        if (!(error instanceof StaleFeedbackError)) throw error;
         return blockUnstarted(payload);
       }
       return transaction((state) => {

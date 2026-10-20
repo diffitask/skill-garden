@@ -34,8 +34,14 @@
   not authoritative; feedback and branch come from GitHub and stored state.
 - Worker PR-read failures, including permission-masking 404s, propagate without
   changing the reservation. Distinguish them from successfully read stale/closed
-  PRs and from missing/edited feedback. Restoring access permits starting the same
-  reserved batch without another webhook delivery or an additional fix round.
+  PRs and from successfully read changed/dismissed feedback. Restoring access permits
+  starting the same reserved batch without another webhook delivery or fix round.
+- Feedback-read failures follow the same rule for reviews, inline comments, and
+  ordinary comments: all access, rate-limit, server, and transport errors retain
+  the reservation. A missing-feedback 404 is indistinguishable from lost access;
+  retain its lock for inspection/manual recovery, even if deletion is the cause.
+  Only a successful read confirming edited or dismissed feedback releases the
+  unstarted reservation automatically. Invalid batch-head input also preserves it.
 - Only that worker token may finish the active batch. Record `completed` or
   `blocked`, and an optional pushed SHA, then release the PR atomically. Processed
   feedback stays recorded, including blocked attempts. New feedback can form a new

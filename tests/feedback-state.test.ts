@@ -267,6 +267,31 @@ test('worker PR-read failures retain the reservation and allow startup after acc
   }
 });
 
+test('feedback-read failures retain reservations for every feedback kind until access returns', async () => {
+  for (const kind of ['review', 'review_comment', 'issue_comment']) {
+    for (const error of [fail(404), fail(403), fail(429), fail(502), new TypeError('Connection reset')]) {
+      const { client, api, deliveries } = await fixture();
+      api.comment(17, 11, kind);
+      const input = { ...payload(), feedback: [{ kind, id: 11 }] };
+      await client.dispatch(input);
+      const path = kind === 'review' ? 'pulls/17/reviews/11' : `${kind === 'review_comment' ? 'pulls' : 'issues'}/comments/11`;
+      api.setIntercept((method, endpoint) => { if (method === 'GET' && endpoint === path) throw error; });
+      await assert.rejects(client.start(deliveries[0]), (caught) => caught === error);
+      api.setIntercept(undefined);
+      const record = await client.status(17);
+      assert.equal(record.active, deliveries[0].batch_id);
+      assert.equal(record.batches.length, 1);
+      assert.equal(record.batches[0].status, 'dispatched');
+      assert.equal((await client.dispatch(input)).status, 'busy');
+      const worker = await client.start(deliveries[0]);
+      assert.equal(worker.status, 'started');
+      await client.finish({ ...deliveries[0], worker_token: worker.worker_token, outcome: 'completed' });
+      assert.equal(deliveries.length, 1);
+      assert.equal((await client.status(17)).batches.length, 1);
+    }
+  }
+});
+
 test('timeouts and HTTP failures retain locks, prevent resends, and require explicit recovery', async () => {
   for (const mode of ['timeout', 'http']) {
     let attempts = 0;
@@ -337,14 +362,15 @@ test('missing stored objects cannot cause an initialized store to be reset', asy
   assert.equal(api.calls.filter((call) => call.method !== 'GET').length, writesBefore);
 });
 
-test('deleted feedback blocks the reserved batch; invalid finish cannot release it', async () => {
+test('missing feedback retains the reservation for inspection; invalid finish cannot release it', async () => {
   const { client, api, deliveries } = await fixture();
   await client.dispatch(payload());
   await assert.rejects(client.finish({ ...deliveries[0], outcome: 'not-an-outcome' }), /Invalid finish/);
   assert.ok((await client.status(17)).active);
   api.feedback.delete('issues/comments/1');
-  assert.equal((await client.start(deliveries[0])).status, 'blocked');
-  assert.equal((await client.status(17)).active, null);
+  await assert.rejects(client.start(deliveries[0]), (error: any) => error.status === 404);
+  assert.equal((await client.status(17)).active, deliveries[0].batch_id);
+  assert.equal((await client.status(17)).batches[0].status, 'dispatched');
 });
 
 test('a lost response after a committed reservation retains the lock without sending', async () => {
