@@ -2,7 +2,7 @@
   "version": 1,
   "prs": {
     "17": {
-      "active": "859e7d78a50e692ad10a35eb687ce2a35365dce8390e7fcaad75aba0b887d1ab",
+      "active": null,
       "batches": [
         {
           "id": "859e7d78a50e692ad10a35eb687ce2a35365dce8390e7fcaad75aba0b887d1ab",
@@ -16,13 +16,14 @@
               "url": "https://github.com/diffitask/ai-workshop-2026/pull/17#issuecomment-6290269524"
             }
           ],
-          "status": "running",
+          "status": "blocked",
           "created_at": "2026-10-20T14:31:13.803Z",
           "worker_token": "aba758d3-27ad-45ee-becd-0ddcc8919de5",
-          "started_at": "2026-10-20T14:32:28.971Z"
+          "started_at": "2026-10-20T14:32:28.971Z",
+          "finished_at": "2026-10-20T14:34:50.570Z"
         }
       ]
     }
   },
-  "revision": "52348889-5de8-44d2-96c6-cfc130fc8fa6"
+  "revision": "6f4db6ba-798e-4927-a4d7-223052a76f67"
 }
