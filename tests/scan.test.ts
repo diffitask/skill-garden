@@ -3,16 +3,17 @@
 // where skills live are yours to add.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 import { openGitHub } from '../src/core/github.ts';
+import { openDirectory } from '../src/local.ts';
 import { parseSkill } from '../src/core/parse.ts';
 import { replay } from '../src/core/replay.ts';
 import { scan } from '../src/core/scan.ts';
-import { atlas, CLI, EXAMPLE_COMMIT, FIXTURE } from './helpers.ts';
+import { atlas, CLI, EXAMPLE_COMMIT, FIXTURE, scanGitHubFiles } from './helpers.ts';
 
 const fixture = await atlas(['scan', FIXTURE]);
 const example = await atlas(['scan', 'github.com/JetBrains/example']);
@@ -33,19 +34,21 @@ test('scan prints the repository, then each skill with its first sentence and pi
     example.stdout,
     [
       'JetBrains/example · 1 skill',
+      "In agents' folders · 1 skill",
       'commits — Write commit messages the way this repository does.',
       `  https://github.com/JetBrains/example/blob/${EXAMPLE_COMMIT}/.claude/skills/commits/SKILL.md`,
     ].join('\n'),
   );
 });
 
-test('./fixture: every skill, sorted by name, linked to its file, with a warning for the malformed one', () => {
+test('./fixture: every skill, in agents\' folders, then elsewhere, sorted by name, linked to its file, with a warning for the malformed one', () => {
   const root = pathToFileURL(FIXTURE).href;
   assert.equal(fixture.code, 0);
   assert.equal(
     fixture.stdout,
     [
-      'fixture · 4 skills',
+      'fixture · 6 skills',
+      "In agents' folders · 4 skills",
       "code-style — Follow the project's code style.",
       `  ${root}/.github/skills/code-style/SKILL.md`,
       'commits — Write commit messages the way this repository does.',
@@ -53,6 +56,11 @@ test('./fixture: every skill, sorted by name, linked to its file, with a warning
       '  also in .claude/skills/commits/SKILL.md',
       'release-checklist',
       `  ${root}/.agents/skills/release-checklist/SKILL.md`,
+      'sample — A skill the tests read.',
+      `  ${root}/tests/data/.claude/skills/sample/SKILL.md`,
+      'Elsewhere · 2 skills',
+      "aspect-generator — Generates a language aspect for the user's project.",
+      `  ${root}/plugins/mcp-tools/resources/assistant/skills/aspect-generator/SKILL.md`,
       'triage — Triage a new issue the way this repository does.',
       `  ${root}/docs/workflows/triage/SKILL.md`,
     ].join('\n'),
@@ -60,9 +68,8 @@ test('./fixture: every skill, sorted by name, linked to its file, with a warning
   assert.match(fixture.stderr, /^warning: \.agents\/skills\/release-checklist\/SKILL\.md: malformed front matter: /);
 });
 
-test('a skill in any agents\' folders side by side → one skill, from .agents, with the others as copies', async () => {
-  const commit = EXAMPLE_COMMIT;
-  const paths = [
+test('the same skill directory in agent folders inside the same folder → one skill, from .agents, with the others as copies', async () => {
+  const result = await scanGitHubFiles([
     '.cursor/skills/deploy/SKILL.md',
     '.opencode/skill/deploy/SKILL.md',
     'agent/skills/deploy/SKILL.md',
@@ -71,23 +78,7 @@ test('a skill in any agents\' folders side by side → one skill, from .agents, 
     'plugins/web/.gemini/skills/lint/SKILL.md',
     'plugins/web/.agents/skills/lint/SKILL.md',
     'plugins/api/.claude/skills/lint/SKILL.md',
-  ];
-  const listed = ['.cursor/skills/deploy', 'docs/skills/deploy', 'plugins/web/.agents/skills/lint', 'plugins/api/.claude/skills/lint'];
-  const github = replay({
-    'https://api.github.com/repos/JetBrains/copies': { status: 200, body: { full_name: 'JetBrains/copies', default_branch: 'main' } },
-    'https://api.github.com/repos/JetBrains/copies/commits/main': { status: 200, body: { sha: commit } },
-    [`https://api.github.com/repos/JetBrains/copies/git/trees/${commit}?recursive=1`]: {
-      status: 200,
-      body: { truncated: false, tree: paths.map((path) => ({ path, mode: '100644', type: 'blob', sha: '0' })) },
-    },
-    ...Object.fromEntries(
-      listed.map((directory) => [
-        `https://raw.githubusercontent.com/JetBrains/copies/${commit}/${directory}/SKILL.md`,
-        { status: 200, body: `---\nname: ${directory.split('/').at(-1)}\ndescription: A skill.\n---\n` },
-      ]),
-    ),
-  });
-  const result = await scan(await openGitHub('https://github.com/JetBrains/copies', { fetch: github }));
+  ]);
   assert.deepEqual(result.warnings, []);
   assert.deepEqual(
     result.skills.map(({ path, copies }) => ({ path, copies })),
@@ -105,7 +96,50 @@ test('a skill in any agents\' folders side by side → one skill, from .agents, 
   );
 });
 
-test('a large tree without a token → the listed part, wherever the skills are, the agents\' folders in full, a warning', async () => {
+test('in an agent\'s folder: a dot folder\'s skills, at any depth; whatever the folders are named, elsewhere otherwise', async () => {
+  const inAgentFolder = {
+    '.claude/skills/commits/SKILL.md': true,
+    '.some-new-agent/skills/review/SKILL.md': true,
+    'agent/skills/deploy/SKILL.md': true,
+    'modules/web/.cursor/skills/lint/SKILL.md': true,
+    // Not right inside the agent folder: agents do not read it.
+    '.claude/skills/group/nested/SKILL.md': false,
+    // Inside a plugin, as in JetBrains/MPS, a package, documentation or the root.
+    'plugins/mcp-tools/resources/assistant/skills/mps-aspect-generator/SKILL.md': false,
+    'packages/cli/skills/setup/SKILL.md': false,
+    'docs/workflows/triage/SKILL.md': false,
+    'skills/pdf/SKILL.md': false,
+    'SKILL.md': false,
+  };
+  const result = await scanGitHubFiles(Object.keys(inAgentFolder));
+  assert.deepEqual(Object.fromEntries(result.skills.map((skill) => [skill.path, skill.inAgentFolder])), inAgentFolder);
+});
+
+test('every SKILL.md, but not through symbolic links, nor .git or node_modules locally; at the root, named after the repository', async (t) => {
+  const github = await scanGitHubFiles(['SKILL.md', '.claude/skills/real/SKILL.md'], ['.cursor/skills/linked/SKILL.md']);
+  assert.deepEqual(
+    github.skills.map(({ name, path }) => ({ name, path })),
+    [
+      { name: 'files', path: 'SKILL.md' },
+      { name: 'real', path: '.claude/skills/real/SKILL.md' },
+    ],
+  );
+
+  const root = mkdtempSync(join(tmpdir(), 'skill-atlas-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const skill = (path: string) => {
+    mkdirSync(join(root, dirname(path)), { recursive: true });
+    writeFileSync(join(root, path), `---\nname: ${basename(dirname(path))}\n---\n`);
+  };
+  for (const path of ['.claude/skills/real/SKILL.md', '.git/skills/git/SKILL.md', 'node_modules/pkg/skills/module/SKILL.md']) skill(path);
+  mkdirSync(join(root, '.cursor/skills'), { recursive: true });
+  symlinkSync(join(root, '.claude/skills/real'), join(root, '.cursor/skills/linked'));
+  symlinkSync(join(root, '.claude/skills/real/SKILL.md'), join(root, 'SKILL.md'));
+  const local = await scan(await openDirectory(root));
+  assert.deepEqual(local.skills.map((skill) => skill.path), ['.claude/skills/real/SKILL.md']);
+});
+
+test('a large tree without a token → the listed part, wherever the skills are, the root\'s agent folders in full, a warning', async () => {
   const commit = EXAMPLE_COMMIT;
   const blob = (path: string) => ({ path, mode: '100644', type: 'blob', sha: '0' });
   const tree = (path: string, sha: string) => ({ path, mode: '040000', type: 'tree', sha });

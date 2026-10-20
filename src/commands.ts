@@ -39,14 +39,28 @@ async function scanCommand(args: string[], context: Context) {
   for (const warning of result.warnings) context.error(`warning: ${warning}`);
 }
 
-/** `<owner>/<repo> · N skills`, then each skill's name, first sentence and link. */
+/**
+ * `<owner>/<repo> · N skills`, then each skill's name, first sentence and link: those
+ * in agents' folders first, then those elsewhere, each group under its heading.
+ */
 function printRepository(repository: Repository, skills: Skill[], { print }: Context) {
-  print(`${repository.id} · ${skills.length} ${skills.length === 1 ? 'skill' : 'skills'}`);
+  print(`${repository.id} · ${count(skills.length)}`);
+  printGroup("In agents' folders", repository, skills.filter((skill) => skill.inAgentFolder), print);
+  printGroup('Elsewhere', repository, skills.filter((skill) => !skill.inAgentFolder), print);
+}
+
+function printGroup(heading: string, repository: Repository, skills: Skill[], print: (text: string) => void) {
+  if (skills.length === 0) return;
+  print(`${heading} · ${count(skills.length)}`);
   for (const skill of skills) {
     print(skill.description ? `${skill.name} — ${firstSentence(skill.description)}` : skill.name);
     print(`  ${skillLink(repository, skill)}`);
     if (skill.copies.length > 0) print(`  also in ${skill.copies.join(', ')}`);
   }
+}
+
+function count(skills: number): string {
+  return `${skills} ${skills === 1 ? 'skill' : 'skills'}`;
 }
 
 function firstSentence(text: string): string {

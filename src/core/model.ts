@@ -22,6 +22,8 @@ export type Skill = {
   commit: string;
   /** The same skill in other agents' folders. */
   copies: string[];
+  /** In a folder agents read skills from, such as `.claude/skills`; else anywhere else. */
+  inAgentFolder: boolean;
 };
 
 /**

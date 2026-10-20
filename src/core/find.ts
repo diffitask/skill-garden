@@ -1,5 +1,5 @@
-/** A skill found in a repository: its SKILL.md, its name and its copies. */
-export type SkillFile = { path: string; name: string; copies: string[] };
+/** A skill found in a repository: its SKILL.md, its name, its copies, and whether it is in an agent's folder. */
+export type SkillFile = { path: string; name: string; copies: string[]; inAgentFolder: boolean };
 
 /** Where agents usually keep a repository's own skills: where a large tree is looked into. */
 export const SKILL_ROOTS = ['.agents/skills', '.claude/skills', '.github/skills', 'agent/skills'];
@@ -21,13 +21,19 @@ export function findSkills(paths: string[], repositoryName: string): SkillFile[]
   }
   return [...groups.values()]
     .map((group) => [...group.filter(isShared), ...group.filter((path) => !isShared(path))])
-    .map(([path, ...copies]) => ({ path, name: path.split('/').at(-2) ?? repositoryName, copies }))
+    .map(([path, ...copies]) => ({
+      path,
+      name: path.split('/').at(-2) ?? repositoryName,
+      copies,
+      inAgentFolder: copyKey(path) !== undefined,
+    }))
     .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 }
 
 /**
  * `<place>/<agent folder>/skills/<name>/SKILL.md` without the agent folder: the same
- * for every copy. An agent folder is a dot folder, such as `.cursor`, or a skill root's.
+ * for every copy; undefined outside an agent's folder. An agent folder is a dot
+ * folder, such as `.cursor`, or a skill root's, at any depth: agents read a module's too.
  */
 function copyKey(path: string): string | undefined {
   const match = /^((?:[^/]+\/)*)([^/]+)\/skills?\/([^/]+)\/SKILL\.md$/.exec(path);
