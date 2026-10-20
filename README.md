@@ -21,3 +21,7 @@ Set `GITHUB_TOKEN` for a higher GitHub rate limit. `npm test` runs the tests.
 To browse skills locally, run `npm start` and open http://127.0.0.1:3000.
 Enter a GitHub repository URL, then select a skill to read its full SKILL.md.
 Set `PORT` to change the port, and optionally `GITHUB_TOKEN` for private repositories or higher API limits.
+
+For a version that needs no server or port setup, open **skill-atlas.html** directly
+in your browser. It browses public repositories and needs an internet connection.
+Regenerate the file with `npm run build:web` after changing the UI or scanner.

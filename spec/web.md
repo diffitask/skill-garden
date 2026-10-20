@@ -6,3 +6,8 @@
 - Show progress while loading and prevent duplicate submissions. Clear old results on a new scan.
 - Show an explicit empty state for no skills, scan warnings, and clear errors for invalid URLs, unavailable repositories, or GitHub rate limits. A failed scan can be retried.
 - Serve the page, script, and stylesheet locally. Repository text is displayed as text, never executable markup. Support narrow screens and keyboard navigation.
+
+## Portable page
+- `npm run build:web` produces a self-contained `skill-atlas.html` to open directly in a browser. No server, port forwarding, CDN scripts, or package installation is needed to use the generated file.
+- The portable page scans public GitHub repositories directly using the same scanner, without a token. An internet connection is required; API failures and rate limits appear in the page.
+- Include styles, scanner, parser, and interaction code in the HTML. It supports skill selection and full original document contents, just like the server view.

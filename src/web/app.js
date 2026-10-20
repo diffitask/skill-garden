@@ -28,9 +28,7 @@ form.addEventListener('submit', async (event) => {
   warnings.hidden = true;
   list.replaceChildren();
   try {
-    const response = await fetch(`/api/scan?repository=${encodeURIComponent(input.value.trim())}`);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Unable to scan the repository.');
+    const data = await loadRepository(input.value.trim());
     document.querySelector('#repo-name').textContent = data.repository.id;
     document.querySelector('#count').textContent = `${data.skills.length} ${data.skills.length === 1 ? 'skill' : 'skills'}`;
     warnings.textContent = data.warnings.join('\n');
@@ -63,3 +61,12 @@ form.addEventListener('submit', async (event) => {
     form.removeAttribute('aria-busy');
   }
 });
+
+async function loadRepository(repository) {
+  // The portable HTML supplies a direct GitHub scanner; the server view uses its API.
+  if (globalThis.skillAtlasScan) return globalThis.skillAtlasScan(repository);
+  const response = await fetch(`/api/scan?repository=${encodeURIComponent(repository)}`);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Unable to scan the repository.');
+  return data;
+}
