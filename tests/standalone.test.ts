@@ -51,6 +51,9 @@ test('portable HTML opens as a file and scans GitHub without a local server or e
   assert.equal(document.querySelectorAll('script[src],link[rel="stylesheet"]').length, 0);
   const input = document.querySelector<HTMLInputElement>('#repository')!;
   const form = document.querySelector('form')!;
+  assert.equal(document.querySelector<HTMLElement>('#github-access')!.hidden, false);
+  assert.equal(document.querySelector('#github-token')!.closest('details'), null, 'Token entry is visible without opening a menu');
+  assert.match(document.querySelector('label[for="github-token"]')!.textContent!, /GitHub token/);
   const submit = async (retry = false) => {
     if (retry) document.querySelector<HTMLButtonElement>('#retry')!.click();
     else form.dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
@@ -74,7 +77,7 @@ test('portable HTML opens as a file and scans GitHub without a local server or e
   const errorPanel = document.querySelector<HTMLElement>('#scan-error')!;
   const errorMessage = document.querySelector('#error-message')!;
   const tokenInput = document.querySelector<HTMLInputElement>('#github-token')!;
-  const access = document.querySelector<HTMLDetailsElement>('#github-access')!;
+  const access = document.querySelector<HTMLElement>('#github-access')!;
   const addToken = document.querySelector<HTMLButtonElement>('#add-token')!;
   assert.equal(errorPanel.hidden, false);
   assert.equal(errorPanel.getAttribute('role'), 'alert');
@@ -86,7 +89,6 @@ test('portable HTML opens as a file and scans GitHub without a local server or e
   assert.equal(addToken.hidden, false);
   assert.equal(access.hidden, false);
   addToken.click();
-  assert.equal(access.open, true);
   assert.equal(document.activeElement, tokenInput);
   assert.equal(tokenInput.type, 'password');
 

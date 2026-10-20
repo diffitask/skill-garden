@@ -7,13 +7,11 @@ const empty = document.querySelector('#empty');
 const warnings = document.querySelector('#warnings');
 const list = document.querySelector('#skills');
 const errorPanel = document.querySelector('#scan-error');
-const access = document.querySelector('#github-access');
 const tokenInput = document.querySelector('#github-token');
 const addToken = document.querySelector('#add-token');
 
 document.querySelector('#retry').addEventListener('click', () => form.requestSubmit());
 addToken.addEventListener('click', () => {
-  access.open = true;
   tokenInput.focus();
 });
 
@@ -77,7 +75,7 @@ form.addEventListener('submit', async (event) => {
           : 'GitHub has temporarily limited requests from your connection. Wait for the limit to reset, or add a GitHub token and try again.')
         : 'GitHub has temporarily limited requests. Wait for the limit to reset, or restart the server with GITHUB_TOKEN set.')
       : (portable && /rejected the token/i.test(message)
-        ? 'GitHub rejected this token. Replace or remove it in GitHub access, then try again.'
+        ? 'GitHub rejected this token. Replace or remove it in the GitHub token field, then try again.'
         : message);
     addToken.hidden = !portable || !limited || Boolean(tokenInput.value.trim());
     status.textContent = 'Scan failed. See the error below.';
