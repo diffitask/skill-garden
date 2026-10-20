@@ -62,5 +62,8 @@ Skill: id = `repo:path`, name, description, commit, copies, in an agent folder (
 - Rate limits during discovery fail the scan. During a repository scan they mark that
   repository failed and retain completed results, with rate-limit guidance. Discovery must
   finish before repository scans start; a failed later discovery page is still an error.
+- A GitHub response interrupted after its headers (an API answer or a document body) is a
+  GitHub error like an unreachable request: during discovery it fails the scan; during a
+  repository scan it marks that repository failed and retains completed results.
 - No public repositories, or public repositories successfully scanned with no skills, are
   successful explicit empty states. A scan with failures and no skills is labeled partial.

@@ -177,3 +177,28 @@ test('GitHub errors redact an echoed token during organization discovery and rep
     assert.match(result.stderr, /\[redacted\]/);
   }
 });
+
+test('organization responses interrupted after their headers fail only that repository, or discovery as a whole', async () => {
+  const interrupted = () => new Response(new ReadableStream({ start(controller) { controller.error(new TypeError('terminated')); } }));
+  for (const phase of ['document', 'repository', 'discovery']) {
+    const url = phase === 'discovery' ? LIST : phase === 'document'
+      ? 'https://raw.githubusercontent.com/Example/zebra/zebra-commit/.agents/skills/shared/SKILL.md'
+      : `${API}/repos/Example/zebra/git/trees/zebra-commit?recursive=1`;
+    const fixture = organizationFixture();
+    fixture[LIST] = { status: 200, body: [entry('alpha'), entry('zebra')] };
+    const transport = replay(fixture);
+    const stdout: string[] = [], stderr: string[] = [];
+    const github: GitHubOptions = { fetch: async (requested, init) => requested === url ? interrupted() : transport(requested, init) };
+    const code = await run(['scan', ORG], { github, open: (input) => openGitHub(input, github),
+      print: (line) => stdout.push(line), error: (line) => stderr.push(line) });
+    assert.equal(code, 1, phase);
+    assert.match(stderr.join('\n'), /Cannot read GitHub's answer for .*: terminated/, phase);
+    if (phase === 'discovery') assert.equal(stdout.join('\n'), '', phase);
+    else {
+      assert.match(stdout.join('\n'), /^Example · 2 skills · PARTIAL RESULTS/, phase);
+      assert.match(stdout.join('\n'), /2 discovered, 1 successfully scanned, 1 failed, 0 skipped/, phase);
+      assert.match(stdout.join('\n'), /Example\/alpha · 2 skills/, phase);
+      assert.match(stderr.join('\n'), /Example\/zebra: Cannot read GitHub's answer/, phase);
+    }
+  }
+});

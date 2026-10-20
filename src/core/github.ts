@@ -144,9 +144,18 @@ function client({ fetch, token }: GitHubOptions) {
     }
   }
 
+  /** A connection can also fail while the body arrives, after the headers. */
+  async function readBody<T>(url: string, read: () => Promise<T>): Promise<T> {
+    try {
+      return await read();
+    } catch (error) {
+      throw new AtlasError(`Cannot read GitHub's answer for ${url}: ${redact(describe(error))}`);
+    }
+  }
+
   async function request(url: string, notFound: string) {
     const response = await get(url, { headers });
-    if (response.ok) return { data: await response.json(), next: /<[^>]+>;\s*rel="next"/.test(response.headers.get('link') ?? '') };
+    if (response.ok) return { data: await readBody(url, () => response.json()), next: /<[^>]+>;\s*rel="next"/.test(response.headers.get('link') ?? '') };
     const body: unknown = await response.json().catch(() => undefined);
     const message = (body as { message?: unknown } | undefined)?.message;
     const text = typeof message === 'string' ? message : '';
@@ -176,7 +185,7 @@ function client({ fetch, token }: GitHubOptions) {
         throw new AtlasError('GitHub rate limit reached; try again in a minute');
       }
       if (!response.ok) throw new AtlasError(`GitHub answered ${response.status} for ${url}`);
-      return new Uint8Array(await response.arrayBuffer());
+      return new Uint8Array(await readBody(url, () => response.arrayBuffer()));
     },
   };
 }
