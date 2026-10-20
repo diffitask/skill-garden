@@ -16,11 +16,13 @@
               "url": "https://github.com/diffitask/ai-workshop-2026/pull/17#issuecomment-6290269524"
             }
           ],
-          "status": "dispatched",
-          "created_at": "2026-10-20T14:31:13.803Z"
+          "status": "running",
+          "created_at": "2026-10-20T14:31:13.803Z",
+          "worker_token": "aba758d3-27ad-45ee-becd-0ddcc8919de5",
+          "started_at": "2026-10-20T14:32:28.971Z"
         }
       ]
     }
   },
-  "revision": "0bd5bed3-f6fd-471e-bd5f-2e6ba32ed444"
+  "revision": "52348889-5de8-44d2-96c6-cfc130fc8fa6"
 }
