@@ -5,6 +5,7 @@
 - Reuse file reads from the scan to show contents without fetching each file again. Store nothing on disk.
 - Show progress while loading and prevent duplicate submissions. Clear old results on a new scan.
 - Show an explicit empty state for no skills, scan warnings, and clear errors for invalid URLs, unavailable repositories, or GitHub rate limits. A failed scan can be retried.
+- Display a decorative pink flower beside Skill Atlas in the header, embedded in both views and hidden from assistive technology.
 - Serve the page, script, and stylesheet locally. Repository text is displayed as text, never executable markup. Support narrow screens and keyboard navigation.
 
 ## Portable page
