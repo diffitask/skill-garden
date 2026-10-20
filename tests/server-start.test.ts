@@ -81,3 +81,38 @@ test('occupied port reports how to recover and exits with code 1', async (t) => 
   assert.equal(code, 1);
   assert.match(stderr, /already in use.*set PORT/);
 });
+
+for (const mode of ['local', 'air', 'override'] as const) {
+  test(`server binding and startup URL in ${mode} environment`, async (t) => {
+    const { startWebServer } = await import('../src/server.ts');
+    const keys = ['PORT', 'HOST', 'FLEET_WORKSPACE_CLIENT_NAME'];
+    const original = keys.map((key) => process.env[key]);
+    t.after(() => keys.forEach((key, i) => {
+      if (original[i] === undefined) delete process.env[key];
+      else process.env[key] = original[i];
+    }));
+    process.env.PORT = '0';
+    delete process.env.HOST;
+    delete process.env.FLEET_WORKSPACE_CLIENT_NAME;
+    if (mode !== 'local') process.env.FLEET_WORKSPACE_CLIENT_NAME = 'air-cloud';
+    if (mode === 'override') process.env.HOST = '127.0.0.1';
+    const messages: string[] = [];
+    t.mock.method(console, 'log', (message: string) => messages.push(message));
+    const server = startWebServer()!;
+    t.after(() => server.close());
+    let publicKey: string;
+    if (mode === 'air') {
+      server.prependOnceListener('listening', () => {
+        publicKey = `JBCENTRAL_EXPOSED_PORT_URL_${(server.address() as AddressInfo).port}`;
+        process.env[publicKey] = 'https://example.test';
+      });
+      t.after(() => { delete process.env[publicKey]; });
+    }
+    await once(server, 'listening');
+    const address = server.address() as AddressInfo;
+    assert.equal(address.address, mode === 'air' ? '0.0.0.0' : '127.0.0.1');
+    assert.equal((await fetch(`http://127.0.0.1:${address.port}`)).status, 200);
+    assert.equal(messages[0], `Skill Atlas: ${mode === 'air' ? 'https://example.test' : `http://localhost:${address.port}`}`);
+    assert.equal(messages.some((line) => line.includes('not exposed')), mode === 'override');
+  });
+}

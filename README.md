@@ -38,3 +38,8 @@ the server. If the port is already in use, stop the other server or choose anoth
 
 The portable HTML export remains available as an optional alternative through
 `npm run build:web`. Regenerate it after changing the UI or scanner.
+
+In Air cloud, the server listens on `0.0.0.0` automatically and prints the exposed
+port URL. Add `3000` under **Settings → Environments → Exposed ports**, save, and
+create a new cloud task with that environment. Existing tasks do not pick up this
+change. You can also set `HOST=0.0.0.0` explicitly for other container environments.

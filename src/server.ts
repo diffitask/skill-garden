@@ -66,6 +66,7 @@ export function startWebServer() {
     return;
   }
   const port = Number(configuredPort);
+  const host = process.env.HOST || (process.env.FLEET_WORKSPACE_CLIENT_NAME === 'air-cloud' ? '0.0.0.0' : '127.0.0.1');
   const server = createWebServer();
   server.on('error', (error: NodeJS.ErrnoException) => {
     console.error(error.code === 'EADDRINUSE'
@@ -73,8 +74,13 @@ export function startWebServer() {
       : `Unable to start Skill Atlas: ${error.message}`);
     process.exitCode = 1;
   });
-  server.listen(port, '127.0.0.1', () => {
-    console.log(`Skill Atlas: http://localhost:${(server.address() as AddressInfo).port}`);
+  server.listen(port, host, () => {
+    const actualPort = (server.address() as AddressInfo).port;
+    const publicUrl = process.env[`JBCENTRAL_EXPOSED_PORT_URL_${actualPort}`];
+    console.log(`Skill Atlas: ${publicUrl || `http://localhost:${actualPort}`}`);
+    if (process.env.FLEET_WORKSPACE_CLIENT_NAME === 'air-cloud' && !publicUrl) {
+      console.log(`Port ${actualPort} is not exposed in this Air environment. Add it to Exposed ports and create a new cloud task.`);
+    }
     console.log('Keep this process running; press Ctrl+C to stop.');
   });
   return server;

@@ -1,5 +1,5 @@
 # Local web view
-- The primary web view is a persistent local HTTP server, started with `npm start` or `./skill-atlas web` from any working directory. It prints `http://localhost:3000` and binds only to loopback; `PORT` overrides the port. No HTML download or build step is required.
+- The primary web view is a persistent local HTTP server, started with `npm start` or `./skill-atlas web` from any working directory. It prints `http://localhost:3000` and binds to loopback locally. In Air cloud it binds to `0.0.0.0` and prints the public URL from `JBCENTRAL_EXPOSED_PORT_URL_<port>` when available; otherwise it explains that the port must be exposed in a new cloud task. `HOST` overrides the bind address and `PORT` overrides the port. No HTML download or build step is required.
 - Keep the process running and reuse the same URL, including after a page reload. Ctrl+C stops it. Serve all assets and scan requests through the local server.
 - Invalid ports fail with a clear message and exit code 1; an occupied port explains how to stop the other server or choose another port. `PORT=0` chooses a free port and prints its actual number.
 - Enter a GitHub repository URL and submit to scan its default branch using the existing scanner. `GITHUB_TOKEN` stays on the server.
