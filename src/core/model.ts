@@ -22,6 +22,8 @@ export type Skill = {
   commit: string;
   /** The same skill in other agents' folders. */
   copies: string[];
+  /** In a folder agents read skills from, such as `.claude/skills`; else anywhere else. */
+  inAgentFolder: boolean;
 };
 
 /**
@@ -29,8 +31,13 @@ export type Skill = {
  * `https://github.com/<owner>/<repo>/blob/<commit>/<path>`; in a local directory, the file itself.
  */
 export function skillLink(repository: Repository, skill: Skill): string {
-  const path = skill.path.split('/').map(encodeURIComponent).join('/');
-  return skill.commit ? `${repository.url}/blob/${skill.commit}/${path}` : `${repository.url}/${path}`;
+  return fileLink(repository, skill.path);
+}
+
+/** A file of the repository, at the scanned commit on GitHub. */
+export function fileLink(repository: Repository, path: string): string {
+  const encoded = path.split('/').map(encodeURIComponent).join('/');
+  return repository.commit ? `${repository.url}/blob/${repository.commit}/${encoded}` : `${repository.url}/${encoded}`;
 }
 
 /** By name, then by path: the same order everywhere, whatever the locale. */

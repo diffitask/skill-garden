@@ -1,4 +1,4 @@
-import { findSkills, type SkillFile } from './find.ts';
+import { findSkills, findTestData, type SkillFile } from './find.ts';
 import { sortSkills, type Repository, type Skill } from './model.ts';
 import { parseSkill } from './parse.ts';
 
@@ -13,7 +13,13 @@ export type Source = {
   read(path: string): Promise<Uint8Array | undefined>;
 };
 
-export type ScanResult = { repository: Repository; skills: Skill[]; warnings: string[] };
+export type ScanResult = {
+  repository: Repository;
+  skills: Skill[];
+  /** The SKILL.md files in test folders, by path: not read, not skills. */
+  testData: string[];
+  warnings: string[];
+};
 
 /** fetch → find → parse. Nothing is stored: the result is all there is. */
 export async function scan(source: Source): Promise<ScanResult> {
@@ -23,6 +29,7 @@ export async function scan(source: Source): Promise<ScanResult> {
   return {
     repository: source.repository,
     skills: sortSkills(results.flatMap((result) => (result.skill ? [result.skill] : []))),
+    testData: findTestData(source.paths),
     warnings: [...source.warnings, ...results.flatMap((result) => (result.warning ? [result.warning] : []))],
   };
 }
@@ -39,6 +46,7 @@ async function readSkill(source: Source, file: SkillFile): Promise<{ skill?: Ski
     description: parsed.description,
     commit: source.repository.commit,
     copies: file.copies,
+    inAgentFolder: file.inAgentFolder,
   };
   return { skill, warning: parsed.warning && `${file.path}: ${parsed.warning}` };
 }

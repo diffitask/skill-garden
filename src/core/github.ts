@@ -58,19 +58,24 @@ async function searchPaths(github: Client, id: string): Promise<string[]> {
 
 type Tree = { truncated: boolean; tree: { path: string; mode: string; type: string; sha: string }[] };
 
-/** The whole tree at once, or only the skill roots when it is too large for one answer. */
+/**
+ * The whole tree at once. When it is too large for one answer: the part the answer
+ * lists, wherever the files are, and the skill roots in full.
+ */
 async function treePaths(github: Client, id: string, sha: string, warnings: string[]): Promise<string[]> {
   const tree = await github.json<Tree>(`${API}/repos/${id}/git/trees/${sha}?recursive=1`);
   if (!tree.truncated) return files(tree);
-  warnings.push(`the tree is too large to list at once; looked only in ${SKILL_ROOTS.join(', ')} (GITHUB_TOKEN searches everywhere)`);
-  const paths: string[] = [];
+  warnings.push(
+    `the tree is too large to list at once; looked in the part GitHub listed and in ${SKILL_ROOTS.join(', ')} (GITHUB_TOKEN searches everywhere)`,
+  );
+  const paths = new Set(files(tree)); // a skill root's files can be in the listed part too
   for (const root of SKILL_ROOTS) {
     const rootSha = await directory(github, id, sha, root);
     if (!rootSha) continue;
     const subtree = await github.json<Tree>(`${API}/repos/${id}/git/trees/${rootSha}?recursive=1`);
-    paths.push(...files(subtree).map((path) => `${root}/${path}`));
+    for (const path of files(subtree)) paths.add(`${root}/${path}`);
   }
-  return paths;
+  return [...paths];
 }
 
 /** Walks down one level at a time; the directory's tree, or undefined if it does not exist. */

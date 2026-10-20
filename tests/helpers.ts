@@ -2,6 +2,7 @@
 import { fileURLToPath } from 'node:url';
 import { run } from '../src/commands.ts';
 import { openGitHub, parseGitHubUrl } from '../src/core/github.ts';
+import { scan } from '../src/core/scan.ts';
 import { replay, type Recording } from '../src/core/replay.ts';
 import { openDirectory } from '../src/local.ts';
 
@@ -38,4 +39,32 @@ export async function atlas(args: string[]) {
     error: (text) => stderr.push(text),
   });
   return { code, stdout: stdout.join('\n'), stderr: stderr.join('\n') };
+}
+
+/**
+ * A scan of JetBrains/files, a GitHub repository with these files and these symbolic
+ * links: each SKILL.md names its directory; at the root, it has no name.
+ */
+export async function scanGitHubFiles(paths: string[], links: string[] = []) {
+  const recording: Recording = {
+    'https://api.github.com/repos/JetBrains/files': { status: 200, body: { full_name: 'JetBrains/files', default_branch: 'main' } },
+    'https://api.github.com/repos/JetBrains/files/commits/main': { status: 200, body: { sha: EXAMPLE_COMMIT } },
+    [`https://api.github.com/repos/JetBrains/files/git/trees/${EXAMPLE_COMMIT}?recursive=1`]: {
+      status: 200,
+      body: {
+        truncated: false,
+        tree: [
+          ...paths.map((path) => ({ path, mode: '100644', type: 'blob', sha: '0' })),
+          ...links.map((path) => ({ path, mode: '120000', type: 'blob', sha: '0' })),
+        ],
+      },
+    },
+  };
+  for (const path of paths) {
+    recording[`https://raw.githubusercontent.com/JetBrains/files/${EXAMPLE_COMMIT}/${path}`] = {
+      status: 200,
+      body: `---\n${path.includes('/') ? `name: ${path.split('/').at(-2)}\n` : ''}description: A skill.\n---\n`,
+    };
+  }
+  return scan(await openGitHub('https://github.com/JetBrains/files', { fetch: replay(recording) }));
 }
