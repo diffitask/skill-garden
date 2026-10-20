@@ -244,6 +244,29 @@ test('access and transport failures on the second PR read preserve the reservati
   }
 });
 
+test('worker PR-read failures retain the reservation and allow startup after access returns', async () => {
+  for (const error of [fail(404), fail(403), fail(429), fail(502), new TypeError('Connection reset')]) {
+    const { client, api, deliveries } = await fixture();
+    await client.dispatch(payload());
+    const batch = deliveries[0];
+    api.setIntercept((method, path) => {
+      if (method === 'GET' && path === 'pulls/17') throw error;
+    });
+    await assert.rejects(client.start(batch), (caught) => caught === error);
+    api.setIntercept(undefined);
+    const record = await client.status(17);
+    assert.equal(record.active, batch.batch_id);
+    assert.equal(record.batches.length, 1);
+    assert.equal(record.batches[0].status, 'dispatched');
+    assert.equal((await client.dispatch(payload())).status, 'busy');
+    const worker = await client.start(batch);
+    assert.equal(worker.status, 'started');
+    await client.finish({ ...batch, worker_token: worker.worker_token, outcome: 'completed' });
+    assert.equal((await client.status(17)).batches.length, 1);
+    assert.equal(deliveries.length, 1);
+  }
+});
+
 test('timeouts and HTTP failures retain locks, prevent resends, and require explicit recovery', async () => {
   for (const mode of ['timeout', 'http']) {
     let attempts = 0;

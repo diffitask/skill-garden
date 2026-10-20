@@ -125,6 +125,16 @@ export function createCoordinator({ repository, request, sendWebhook, now = () =
     return batch;
   }
 
+  function blockUnstarted(payload) {
+    return transaction((state) => {
+      const record = state.prs[payload.pr_number];
+      const batch = record.batches.find((b) => b.id === payload.batch_id);
+      if (!['dispatching', 'dispatched', 'uncertain'].includes(batch.status)) return { value: { status: 'not_startable' } };
+      batch.status = 'blocked'; batch.reason = 'PR or feedback is no longer current'; record.active = null;
+      return { write: true, value: { status: 'blocked' } };
+    });
+  }
+
   return {
     async init() {
       try { await load(); return { status: 'already_initialized', branch }; }
@@ -204,6 +214,13 @@ export function createCoordinator({ repository, request, sendWebhook, now = () =
       let pr, feedback;
       try {
         pr = await currentPR(payload);
+      } catch (error) {
+        // A PR-read 404 can mask lost access. Only an actual stale PR result
+        // establishes that this reservation can be released.
+        if (!(error instanceof StalePRError)) throw error;
+        return blockUnstarted(payload);
+      }
+      try {
         if (stored.head_sha !== payload.head_sha) throw new Error('Batch head mismatch');
         feedback = await fetchFeedback(payload.pr_number, stored.feedback);
         if (hash(feedback) !== hash(stored.feedback)) throw new Error('Feedback changed');
@@ -211,14 +228,8 @@ export function createCoordinator({ repository, request, sendWebhook, now = () =
         // Only definitive stale/deleted feedback releases a reservation. Access or
         // uncertain transport errors must not turn an unknown outcome into a retry.
         if (error.status && error.status !== 404) throw error;
-        if (!error.status && !/PR closed|Batch head|Feedback changed|dismissed/.test(error.message)) throw error;
-        return transaction((state) => {
-          const record = state.prs[payload.pr_number];
-          const batch = record.batches.find((b) => b.id === payload.batch_id);
-          if (!['dispatching', 'dispatched', 'uncertain'].includes(batch.status)) return { value: { status: 'not_startable' } };
-          batch.status = 'blocked'; batch.reason = 'PR or feedback is no longer current'; record.active = null;
-          return { write: true, value: { status: 'blocked' } };
-        });
+        if (!error.status && !/Batch head|Feedback changed|dismissed/.test(error.message)) throw error;
+        return blockUnstarted(payload);
       }
       return transaction((state) => {
         const record = state.prs[payload.pr_number];

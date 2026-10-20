@@ -32,6 +32,10 @@
   and unchanged original feedback, and receive its unique worker token before any
   editing. Duplicate deliveries must not start a second worker. Payload copies are
   not authoritative; feedback and branch come from GitHub and stored state.
+- Worker PR-read failures, including permission-masking 404s, propagate without
+  changing the reservation. Distinguish them from successfully read stale/closed
+  PRs and from missing/edited feedback. Restoring access permits starting the same
+  reserved batch without another webhook delivery or an additional fix round.
 - Only that worker token may finish the active batch. Record `completed` or
   `blocked`, and an optional pushed SHA, then release the PR atomically. Processed
   feedback stays recorded, including blocked attempts. New feedback can form a new
