@@ -23,6 +23,7 @@ function fixture() {
       if (endpoint.endsWith('/pulls/17')) {
         if (++prReads === 2 && options.changedHead) pr.head.sha = 'c'.repeat(40);
         if (prReads === 2 && options.closed) pr.state = 'closed';
+        if (prReads === 2 && options.secondPR) Object.assign(pr, options.secondPR);
         return structuredClone(pr);
       }
       if (endpoint.includes('/git/ref/')) return { object: { sha: '1' } };
@@ -130,4 +131,16 @@ test('label setup creates only missing labels and is idempotent', async () => {
   assert.equal(existing.length, 5);
   await ensureStatusLabels(repository, request);
   assert.equal(existing.length, 5);
+});
+
+
+test('the final PR read decides mergeability, including delayed calculation and newly introduced conflicts', async () => {
+  const delayed = fixture();
+  Object.assign(delayed.pr, { mergeable: null, mergeable_state: 'unknown' });
+  delayed.options.secondPR = { mergeable: true, mergeable_state: 'clean' };
+  assert.equal((await delayed.run()).status, 'AI: review passed');
+  for (const changed of [{ mergeable: false, mergeable_state: 'dirty' }, { draft: true }]) {
+    const f = fixture(); f.options.secondPR = changed;
+    assert.notEqual((await f.run()).status, 'AI: review passed');
+  }
 });

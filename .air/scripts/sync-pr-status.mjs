@@ -19,6 +19,7 @@ export async function syncPrStatus({ repository, number, request }) {
   const head = pr.head.sha;
   const record = await createCoordinator({ repository, request }).status(number);
   const active = record.batches.find((batch) => batch.id === record.active);
+  let cleanCi = false;
   let desired = 'AI: reviewing', reason = 'Waiting for a review of the current commit';
   if (active) {
     desired = active.status === 'uncertain' ? 'AI: needs human' : 'AI: fixing';
@@ -57,10 +58,7 @@ export async function syncPrStatus({ repository, number, request }) {
         run.pull_requests?.some((p) => p.number === number)).sort((a, b) => b.id - a.id)[0];
       if (!run || run.status !== 'completed') reason = 'Clean review; waiting for pull-request CI for this commit';
       else if (run.conclusion !== 'success') { desired = 'AI: needs human'; reason = `Pull-request CI concluded ${run.conclusion}`; }
-      else if (pr.draft) reason = 'Clean review and CI; PR is still a draft';
-      else if (pr.mergeable === false || pr.mergeable_state === 'dirty') { desired = 'AI: needs human'; reason = 'Merge conflicts must be resolved'; }
-      else if (pr.mergeable === true && pr.mergeable_state === 'clean') { desired = 'AI: review passed'; reason = 'Current review and pull-request CI passed; ready for the maintainer to merge'; }
-      else reason = 'Clean review and CI; waiting for GitHub to confirm merge readiness';
+      else cleanCi = true;
     } else if (latest?.status === 'blocked' && latest.head_sha === head) {
       desired = 'AI: needs human'; reason = 'Latest fix attempt was blocked';
     }
@@ -68,6 +66,12 @@ export async function syncPrStatus({ repository, number, request }) {
   // Recheck after slow reads; never apply a decision for a superseded commit.
   const current = await request('GET', `${root}/pulls/${number}`);
   if (current.state !== 'open' || current.head.sha !== head) return { status: 'superseded' };
+  if (cleanCi) {
+    if (current.draft) reason = 'Clean review and CI; PR is still a draft';
+    else if (current.mergeable === false || current.mergeable_state === 'dirty') { desired = 'AI: needs human'; reason = 'Merge conflicts must be resolved'; }
+    else if (current.mergeable === true && current.mergeable_state === 'clean') { desired = 'AI: review passed'; reason = 'Current review and pull-request CI passed; ready for the maintainer to merge'; }
+    else reason = 'Clean review and CI; waiting for GitHub to confirm merge readiness';
+  }
   // A new worker may have started during the reads. Let its next reconciliation win.
   const currentRecord = await createCoordinator({ repository, request }).status(number);
   if (currentRecord.active !== record.active || currentRecord.batches.length !== record.batches.length) return { status: 'superseded' };
