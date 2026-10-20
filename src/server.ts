@@ -2,14 +2,16 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { AtlasError } from './core/errors.ts';
-import { openGitHub, parseGitHubUrl } from './core/github.ts';
-import { skillLink } from './core/model.ts';
-import { scan, type Source } from './core/scan.ts';
+import { openGitHub, parseGitHubUrl, parseOrganizationUrl, type GitHubOptions } from './core/github.ts';
+import type { Source } from './core/scan.ts';
+import { scanTarget } from './core/target.ts';
+import { scanWithContents } from './core/view.ts';
 
-type Options = { open?: (input: string) => Promise<Source> };
+type Options = { open?: (input: string) => Promise<Source>; github?: GitHubOptions };
 
 export function createWebServer(options: Options = {}) {
-  const open = options.open ?? ((input: string) => openGitHub(input, { fetch, token: process.env.GITHUB_TOKEN || undefined }));
+  const github = options.github ?? { fetch, token: process.env.GITHUB_TOKEN || undefined };
+  const open = options.open ?? ((input: string) => openGitHub(input, github));
   const assets = new Map([
     ['/', ['index.html', 'text/html; charset=utf-8']],
     ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
@@ -27,22 +29,14 @@ export function createWebServer(options: Options = {}) {
       }
       if (url.pathname === '/api/scan') {
         const input = url.searchParams.get('repository') ?? '';
-        if (!parseGitHubUrl(input)) {
+        if (!parseGitHubUrl(input) && !parseOrganizationUrl(input)) {
           response.writeHead(400, { 'Content-Type': 'application/json' });
-          response.end(JSON.stringify({ error: 'Enter a GitHub repository URL, such as https://github.com/owner/repository.' }));
+          response.end(JSON.stringify({ error: 'Enter a GitHub repository URL or organization URL, such as https://github.com/owner/repository or https://github.com/organization.' }));
           return;
         }
-        const source = await open(input);
-        const contents = new Map<string, string>();
-        const result = await scan({ ...source, read: async (path) => {
-          const bytes = await source.read(path);
-          if (bytes) contents.set(path, new TextDecoder().decode(bytes));
-          return bytes;
-        } });
+        const result = await scanTarget(input, open, github, scanWithContents);
         response.writeHead(200, { 'Content-Type': 'application/json' });
-        response.end(JSON.stringify({ ...result, skills: result.skills.map((skill) => ({
-          ...skill, link: skillLink(result.repository, skill), content: contents.get(skill.path),
-        })) }));
+        response.end(JSON.stringify(result));
         return;
       }
       const asset = assets.get(url.pathname);

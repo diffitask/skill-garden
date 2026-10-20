@@ -259,3 +259,12 @@ test('rate limit → a message that asks for GITHUB_TOKEN', async () => {
     message: 'GitHub rate limit reached; set GITHUB_TOKEN',
   });
 });
+
+test('YAML conversion errors keep original body and safe directory-name fallback without expanding aliases', () => {
+  const parsed = parseSkill('---\nname: aliases\na: &a [x,x,x,x,x,x,x,x,x,x]\nb: &b [*a,*a,*a,*a,*a,*a,*a,*a,*a,*a]\nc: [*b,*b,*b,*b,*b,*b,*b,*b,*b,*b]\n---\n# Original instructions\n');
+  assert.equal(parsed.name, undefined);
+  assert.equal(parsed.description, '');
+  assert.deepEqual(parsed.properties, {});
+  assert.equal(parsed.body, '# Original instructions');
+  assert.match(parsed.warning!, /malformed front matter: Excessive alias count/);
+});

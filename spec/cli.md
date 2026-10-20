@@ -18,3 +18,16 @@ build-tools-bump-gradle-api — Bumps the Gradle API…
 - Last, `Test data, not skills · N files`: only the links
 - Sorted by **name**; the description's *first sentence*
 - `also in <paths>` for copies; warnings go to *stderr*
+
+## Organizations
+- `./skill-atlas scan https://github.com/<organization>` prints the organization name,
+  total skill count, and public repository counts (discovered, successfully scanned,
+  failed, skipped). It uses the same optional `GITHUB_TOKEN` and stores nothing.
+- Print repositories in alphabetical order, with the existing skill groups, name ordering,
+  descriptions, copies, commit-pinned links, and separate test-data links within each.
+- Print an explicit `No public repositories found.` or `No skills found.` on successful
+  empty scans. For incomplete scans, label `PARTIAL RESULTS`, retain completed repository
+  output, report repository-specific warnings to stderr, and return exit code 1.
+- Invalid/user/nonexistent organization targets and organization discovery failures return
+  exit code 1 with a clear error. Anonymous rate-limit errors recommend `GITHUB_TOKEN`;
+  authenticated limits recommend waiting. A successful complete scan returns exit code 0.

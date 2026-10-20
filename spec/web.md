@@ -28,3 +28,31 @@
 - Preserve the original wording, version numbers, and every sentence. Recognize a caution clause after a semicolon (for example, “for older 0.x versions”) without inventing requirements or summaries. Unrecognized prose stays in What it does / Details.
 - Use larger text and a highlighted background for What it does, separate cards for usage and cautions, and a single-column layout on narrow screens. Render all description content as plain text.
 - Put the unmodified document and path in an expandable Full SKILL.md section, collapsed initially and when changing skills. Missing descriptions show an explicit fallback pointing to the full document.
+
+## Organizations in both views
+- The existing input accepts a GitHub repository URL or organization URL and explains both.
+  Organization scans include only public repositories, including forks and archived repositories,
+  even with a token. The server keeps its token on the server; the portable page keeps browser
+  tokens only in the current tab. API authentication and unauthenticated public document reads
+  retain their existing routing; no token appears in storage, URLs, HTML, or error messages.
+- Show progress and disable submission while scanning; also ignore programmatic duplicate
+  submissions. Clear the previous summary, skill list, document, test data, warnings, and
+  visible results when starting another scan. Organization scans have no overall five-second target.
+- Show the organization name, total skill count, and public repository counts: discovered,
+  successfully scanned, failed, skipped. Group skills by repository alphabetically, then by
+  the existing agent/elsewhere groups with name ordering within groups. Show copies and descriptions.
+- Attribute every skill to its source repository in the list and document view. Select the
+  first displayed skill initially, retain selection/full-document behavior across repositories,
+  and pin each link to its own repository's scanned commit. Keep test-data links in a separate
+  section, grouped by repository; never read them or count them as skills.
+- Repository failures and empty repositories retain completed results with repository-specific
+  warnings and a prominent partial-results status. Incomplete tree/file discovery also labels
+  partial results. Rate-limit warnings use the same environment-specific guidance as scan
+  errors, including waiting or entering a token in the portable page, never environment-variable
+  advice to browser users. No skills from completed scans with failures is a partial empty state.
+- Organization discovery errors (including user accounts, nonexistent organizations, failures
+  on later pages, and rate limits) show the focused error panel and retry behavior. Explain
+  explicitly that user accounts cannot be scanned as organizations. They are never shown as
+  empty successful organizations.
+- Organizations with no public repositories or complete scans with no skills show successful,
+  distinct empty messages and repository counts. Regenerate the portable HTML after changes.
