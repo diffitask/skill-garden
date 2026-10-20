@@ -65,6 +65,7 @@ test('workflow handles PR updates and manual review while separating generation 
   assert.ok(workflow.on.pull_request.types.includes('synchronize'));
   assert.equal(workflow.on.workflow_dispatch.inputs.pr_number.required, true);
   assert.equal(workflow.permissions.contents, 'read');
+  assert.equal(workflow.permissions['pull-requests'], 'read');
   assert.equal(workflow.jobs.review.permissions, undefined);
   assert.equal(workflow.jobs.publish.permissions['pull-requests'], 'write');
   assert.match(workflow.jobs.review.if, /head.repo.full_name == github.repository/);
