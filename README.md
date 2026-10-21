@@ -15,6 +15,8 @@ build-tools-bump-gradle-api — Bumps the Gradle API version that Kotlin Gradle 
 ```
 
 Set `GITHUB_TOKEN` for a higher GitHub rate limit. `npm test` runs the tests.
+For browser layout integration tests, run `npx playwright install --with-deps chromium`
+once, then `npm run test:browser`. These exercise both views with replayed GitHub responses.
 
 - [spec/](spec/): what it does. [AGENTS.md](AGENTS.md): the definition of done.
 - [fixture/](fixture/README.md): a small repository for the tests.
