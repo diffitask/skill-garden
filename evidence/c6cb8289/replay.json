@@ -1,0 +1,213 @@
+{
+  "https://api.github.com/users/Example": {
+    "status": 200,
+    "body": {
+      "login": "Example",
+      "type": "Organization"
+    }
+  },
+  "https://api.github.com/orgs/Example/repos?type=public&per_page=100&page=1": {
+    "status": 200,
+    "body": [
+      {
+        "full_name": "Example/zebra",
+        "private": false,
+        "archived": true
+      },
+      {
+        "full_name": "Example/private",
+        "private": true
+      }
+    ],
+    "headers": {
+      "Link": "<https://api.github.com/orgs/Example/repos?type=public&per_page=100&page=2>; rel=\"next\""
+    }
+  },
+  "https://api.github.com/orgs/Example/repos?type=public&per_page=100&page=2": {
+    "status": 200,
+    "body": [
+      {
+        "full_name": "Example/alpha",
+        "private": false,
+        "fork": true
+      },
+      {
+        "full_name": "Example/empty",
+        "private": false
+      },
+      {
+        "full_name": "Example/failed",
+        "private": false
+      },
+      {
+        "full_name": "Example/zebra",
+        "private": false
+      }
+    ]
+  },
+  "https://api.github.com/repos/Example/empty": {
+    "status": 200,
+    "body": {
+      "full_name": "Example/empty",
+      "default_branch": "main"
+    }
+  },
+  "https://api.github.com/repos/Example/empty/commits/main": {
+    "status": 409,
+    "body": {
+      "message": "Git Repository is empty."
+    }
+  },
+  "https://api.github.com/repos/Example/failed": {
+    "status": 404,
+    "body": {
+      "message": "Not Found"
+    }
+  },
+  "https://api.github.com/repos/Example/alpha": {
+    "status": 200,
+    "body": {
+      "full_name": "Example/alpha",
+      "default_branch": "release/default"
+    }
+  },
+  "https://api.github.com/repos/Example/alpha/commits/release/default": {
+    "status": 200,
+    "body": {
+      "sha": "alpha-commit"
+    }
+  },
+  "https://api.github.com/repos/Example/alpha/git/trees/alpha-commit?recursive=1": {
+    "status": 200,
+    "body": {
+      "truncated": false,
+      "tree": [
+        {
+          "path": ".claude/skills/shared/SKILL.md",
+          "type": "blob",
+          "mode": "100644",
+          "sha": "blob"
+        },
+        {
+          "path": ".agents/skills/shared/SKILL.md",
+          "type": "blob",
+          "mode": "100644",
+          "sha": "blob"
+        },
+        {
+          "path": "docs/elsewhere/SKILL.md",
+          "type": "blob",
+          "mode": "100644",
+          "sha": "blob"
+        },
+        {
+          "path": "tests/fixtures/broken/SKILL.md",
+          "type": "blob",
+          "mode": "100644",
+          "sha": "blob"
+        }
+      ]
+    }
+  },
+  "https://raw.githubusercontent.com/Example/alpha/alpha-commit/.agents/skills/shared/SKILL.md": {
+    "status": 200,
+    "body": "---\nname: same-name\ndescription: Skills from alpha. Use when testing.\n---\n# alpha instructions\n<script>throw new Error('unsafe')</script>"
+  },
+  "https://raw.githubusercontent.com/Example/alpha/alpha-commit/docs/elsewhere/SKILL.md": {
+    "status": 200,
+    "body": "---\nname: aaa-elsewhere\ndescription: Elsewhere.\n---\n# alpha elsewhere"
+  },
+  "https://api.github.com/search/code?q=filename:SKILL.md+repo:Example/alpha&per_page=100&page=1": {
+    "status": 200,
+    "body": {
+      "total_count": 4,
+      "items": [
+        {
+          "path": ".claude/skills/shared/SKILL.md"
+        },
+        {
+          "path": ".agents/skills/shared/SKILL.md"
+        },
+        {
+          "path": "docs/elsewhere/SKILL.md"
+        },
+        {
+          "path": "tests/fixtures/broken/SKILL.md"
+        }
+      ]
+    }
+  },
+  "https://api.github.com/repos/Example/zebra": {
+    "status": 200,
+    "body": {
+      "full_name": "Example/zebra",
+      "default_branch": "main"
+    }
+  },
+  "https://api.github.com/repos/Example/zebra/commits/main": {
+    "status": 200,
+    "body": {
+      "sha": "zebra-commit"
+    }
+  },
+  "https://api.github.com/repos/Example/zebra/git/trees/zebra-commit?recursive=1": {
+    "status": 200,
+    "body": {
+      "truncated": false,
+      "tree": [
+        {
+          "path": ".claude/skills/shared/SKILL.md",
+          "type": "blob",
+          "mode": "100644",
+          "sha": "blob"
+        },
+        {
+          "path": ".agents/skills/shared/SKILL.md",
+          "type": "blob",
+          "mode": "100644",
+          "sha": "blob"
+        },
+        {
+          "path": "docs/elsewhere/SKILL.md",
+          "type": "blob",
+          "mode": "100644",
+          "sha": "blob"
+        },
+        {
+          "path": "tests/fixtures/broken/SKILL.md",
+          "type": "blob",
+          "mode": "100644",
+          "sha": "blob"
+        }
+      ]
+    }
+  },
+  "https://raw.githubusercontent.com/Example/zebra/zebra-commit/.agents/skills/shared/SKILL.md": {
+    "status": 200,
+    "body": "---\nname: same-name\ndescription: Skills from zebra. Use when testing.\n---\n# zebra instructions\n<script>throw new Error('unsafe')</script>"
+  },
+  "https://raw.githubusercontent.com/Example/zebra/zebra-commit/docs/elsewhere/SKILL.md": {
+    "status": 200,
+    "body": "---\nname: aaa-elsewhere\ndescription: Elsewhere.\n---\n# zebra elsewhere"
+  },
+  "https://api.github.com/search/code?q=filename:SKILL.md+repo:Example/zebra&per_page=100&page=1": {
+    "status": 200,
+    "body": {
+      "total_count": 4,
+      "items": [
+        {
+          "path": ".claude/skills/shared/SKILL.md"
+        },
+        {
+          "path": ".agents/skills/shared/SKILL.md"
+        },
+        {
+          "path": "docs/elsewhere/SKILL.md"
+        },
+        {
+          "path": "tests/fixtures/broken/SKILL.md"
+        }
+      ]
+    }
+  }
+}

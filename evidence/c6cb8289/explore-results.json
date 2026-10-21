@@ -1,0 +1,94 @@
+[
+  {
+    "variant": "server",
+    "attempt": 1,
+    "browser": "156.0.8078.4",
+    "summary": "Example · 4 skills · Repositories: 4 discovered, 2 successfully scanned, 1 failed, 1 skipped",
+    "shown": "4 of 4 skills",
+    "members": [
+      "same-name",
+      "same-name"
+    ],
+    "unclustered": "",
+    "status": "Claude Haiku 4.5 clustered 2 skills.",
+    "errors": [],
+    "onlyOmitted": {
+      "shown": "2 of 4 skills",
+      "unclustered": "",
+      "noClusters": true
+    },
+    "retainsDocument": true,
+    "collapsesDocument": true,
+    "lateResponseIgnored": true,
+    "video": "ai-count-server-1.webm"
+  },
+  {
+    "variant": "server",
+    "attempt": 2,
+    "browser": "156.0.8078.4",
+    "summary": "Example · 4 skills · Repositories: 4 discovered, 2 successfully scanned, 1 failed, 1 skipped",
+    "shown": "4 of 4 skills",
+    "members": [
+      "same-name",
+      "same-name"
+    ],
+    "unclustered": "",
+    "status": "Claude Haiku 4.5 clustered 2 skills.",
+    "errors": [],
+    "onlyOmitted": {
+      "shown": "2 of 4 skills",
+      "unclustered": "",
+      "noClusters": true
+    },
+    "retainsDocument": true,
+    "collapsesDocument": true,
+    "lateResponseIgnored": true,
+    "video": "ai-count-server-2.webm"
+  },
+  {
+    "variant": "portable",
+    "attempt": 1,
+    "browser": "156.0.8078.4",
+    "summary": "Example · 4 skills · Repositories: 4 discovered, 2 successfully scanned, 1 failed, 1 skipped",
+    "shown": "4 of 4 skills",
+    "members": [
+      "same-name",
+      "same-name"
+    ],
+    "unclustered": "",
+    "status": "Claude Haiku 4.5 clustered 2 skills.",
+    "errors": [],
+    "onlyOmitted": {
+      "shown": "2 of 4 skills",
+      "unclustered": "",
+      "noClusters": true
+    },
+    "retainsDocument": true,
+    "collapsesDocument": true,
+    "lateResponseIgnored": true,
+    "video": "ai-count-portable-1.webm"
+  },
+  {
+    "variant": "portable",
+    "attempt": 2,
+    "browser": "156.0.8078.4",
+    "summary": "Example · 4 skills · Repositories: 4 discovered, 2 successfully scanned, 1 failed, 1 skipped",
+    "shown": "4 of 4 skills",
+    "members": [
+      "same-name",
+      "same-name"
+    ],
+    "unclustered": "",
+    "status": "Claude Haiku 4.5 clustered 2 skills.",
+    "errors": [],
+    "onlyOmitted": {
+      "shown": "2 of 4 skills",
+      "unclustered": "",
+      "noClusters": true
+    },
+    "retainsDocument": true,
+    "collapsesDocument": true,
+    "lateResponseIgnored": true,
+    "video": "ai-count-portable-2.webm"
+  }
+]
