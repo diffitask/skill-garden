@@ -1,0 +1,131 @@
+{
+  "repository": "diffitask/ai-workshop-2026",
+  "pr": 26,
+  "base": "badedeb24d2ec434dc7966510d69fed71bccbf96",
+  "head": "d9000bc0cb769db10675087efabbe3bf417dc851",
+  "browser": "156.0.8078.4",
+  "viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "view": "server",
+  "transport": "Replayed GitHub fixture; delayed deterministic model stub, not live Claude",
+  "observations": [
+    {
+      "name": "before-all-skills",
+      "phase": "BEFORE · badedeb",
+      "seconds": 9.5,
+      "count": "4 of 4 skills",
+      "clusterCount": "1 cluster",
+      "cards": 1,
+      "unsent": null,
+      "noClustersVisible": false,
+      "unclustered": "",
+      "status": "Claude Haiku 4.5 clustered 2 skills."
+    },
+    {
+      "name": "before-only-unsent",
+      "phase": "BEFORE · badedeb",
+      "seconds": 14.8,
+      "count": "2 of 4 skills",
+      "clusterCount": "0 clusters",
+      "cards": 0,
+      "unsent": null,
+      "noClustersVisible": true,
+      "unclustered": "",
+      "status": "Claude Haiku 4.5 clustered 2 skills."
+    },
+    {
+      "name": "after-all-skills",
+      "phase": "AFTER · d9000bc",
+      "seconds": 27.3,
+      "count": "4 of 4 skills",
+      "clusterCount": "1 cluster",
+      "cards": 1,
+      "unsent": "Not sent to Claude: 2 skills. Cluster again to include them.",
+      "noClustersVisible": false,
+      "unclustered": "",
+      "status": "Claude Haiku 4.5 clustered 2 skills."
+    },
+    {
+      "name": "after-only-unsent",
+      "phase": "AFTER · d9000bc",
+      "seconds": 32.7,
+      "count": "2 of 4 skills",
+      "clusterCount": "0 clusters",
+      "cards": 0,
+      "unsent": "Not sent to Claude: 2 skills. Cluster again to include them.",
+      "noClustersVisible": false,
+      "unclustered": "",
+      "status": "Claude Haiku 4.5 clustered 2 skills."
+    },
+    {
+      "name": "after-reclustered",
+      "phase": "AFTER · d9000bc",
+      "seconds": 41.8,
+      "count": "2 of 4 skills",
+      "clusterCount": "0 clusters",
+      "cards": 0,
+      "unsent": "",
+      "noClustersVisible": true,
+      "unclustered": "Not in a cluster: 2 skills",
+      "status": "Claude Haiku 4.5 clustered 2 skills."
+    }
+  ],
+  "moments": [
+    {
+      "seconds": 0.2,
+      "phase": "PR #26",
+      "title": "Know which skills the model actually evaluated",
+      "explanation": "Same data. Same actions. Before and after this fix."
+    },
+    {
+      "seconds": 4.2,
+      "phase": "BEFORE · badedeb",
+      "title": "1. Send only the filtered skills",
+      "explanation": "Four skills loaded. Filter down to two, then cluster them."
+    },
+    {
+      "seconds": 8,
+      "phase": "BEFORE · badedeb",
+      "title": "2. Clear the filter while the answer is pending",
+      "explanation": "All four skills are visible; only two were sent to the model."
+    },
+    {
+      "seconds": 14.6,
+      "phase": "BEFORE · badedeb",
+      "title": "3. Show only the two skills that were never sent",
+      "explanation": "The UI wrongly says: Claude found no clusters among these skills."
+    },
+    {
+      "seconds": 22,
+      "phase": "AFTER · d9000bc",
+      "title": "1. Send only the filtered skills",
+      "explanation": "Four skills loaded. Filter down to two, then cluster them."
+    },
+    {
+      "seconds": 25.9,
+      "phase": "AFTER · d9000bc",
+      "title": "2. Clear the filter while the answer is pending",
+      "explanation": "All four skills are visible; only two were sent to the model."
+    },
+    {
+      "seconds": 32.4,
+      "phase": "AFTER · d9000bc",
+      "title": "3. Show only the two skills that were never sent",
+      "explanation": "The UI now says: Not sent to Claude. Cluster again to include them."
+    },
+    {
+      "seconds": 39.7,
+      "phase": "AFTER · d9000bc",
+      "title": "4. Cluster again to evaluate those skills",
+      "explanation": "Now these two skills are actually sent. The model can give a result."
+    },
+    {
+      "seconds": 41.8,
+      "phase": "RESULT",
+      "title": "Unsent and evaluated skills are clearly distinguished",
+      "explanation": "After a new request, “Not in a cluster” describes a real model result."
+    }
+  ]
+}
