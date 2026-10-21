@@ -1,7 +1,3 @@
-
-
-https://github.com/user-attachments/assets/b0670cdf-cbe6-45eb-bb60-60d98183efdb
-
 <div align="center">
 
 # 🌸 Skill Garden
