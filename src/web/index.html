@@ -34,12 +34,34 @@
       <div class="skill-filter"><label for="filter-skills">Filter skills</label><input id="filter-skills" type="search" autocomplete="off" spellcheck="false" aria-controls="skills" aria-describedby="filter-help"><p id="filter-help" class="hint">Match every word in the skill name or description.</p></div>
       <p id="no-matches" role="status" hidden>No skills match your filter</p>
       <section id="clusters" aria-labelledby="clusters-title">
-        <div class="clusters-heading"><h3 id="clusters-title">Skill clusters</h3><span id="cluster-count" class="badge"></span></div>
-        <p class="hint">Skills grouped by the distinctive words of their names and descriptions; words most skills use count little. Select a skill to open it.</p>
-        <div class="cluster-level"><label for="cluster-level">Cluster similarity</label><select id="cluster-level" aria-controls="cluster-list"></select></div>
-        <div id="cluster-list"></div>
-        <p id="no-clusters" hidden>No skills share enough words to form a cluster.</p>
-        <p id="unclustered" class="hint"></p>
+        <h3 id="clusters-title">Skill clusters</h3>
+        <div class="cluster-panels">
+          <section class="cluster-panel" aria-labelledby="word-clusters-title">
+            <div class="clusters-heading"><h4 id="word-clusters-title">Without AI</h4><span id="cluster-count" class="badge"></span></div>
+            <p class="hint">Skills grouped by the distinctive words of their names and descriptions; words most skills use count little. Select a skill to open it.</p>
+            <div class="cluster-level"><label for="cluster-level">Cluster similarity</label><select id="cluster-level" aria-controls="cluster-list"></select></div>
+            <div id="cluster-list"></div>
+            <p id="no-clusters" hidden>No skills share enough words to form a cluster.</p>
+            <p id="unclustered" class="hint"></p>
+          </section>
+          <section id="ai-clusters" class="cluster-panel" aria-labelledby="ai-clusters-title">
+            <div class="clusters-heading"><h4 id="ai-clusters-title">With AI</h4><span id="ai-cluster-count" class="badge">Claude Haiku 4.5</span></div>
+            <p id="ai-help" class="hint">Claude Haiku 4.5 groups the shown skills by meaning through the local claude CLI (claude -p, no tools). Skill names and descriptions are sent to Claude.</p>
+            <div id="ai-helper" class="ai-helper" hidden>
+              <p class="hint">This page asks the local AI helper: run <code>npm start</code> in the Skill Atlas repository, with Claude Code installed and logged in, and paste the pairing code it prints. The code stays in this tab and is never saved.</p>
+              <label for="ai-helper-url">AI helper address</label>
+              <input id="ai-helper-url" type="url" value="http://127.0.0.1:3000" autocomplete="off" spellcheck="false">
+              <label for="ai-pairing-code">Pairing code</label>
+              <input id="ai-pairing-code" type="password" autocomplete="off" spellcheck="false" placeholder="Printed by npm start">
+            </div>
+            <button id="ai-cluster" type="button">Cluster with AI</button>
+            <p id="ai-status" role="status"></p>
+            <div id="ai-error" role="alert" hidden></div>
+            <div id="ai-cluster-list"></div>
+            <p id="ai-no-clusters" hidden>Claude found no clusters among these skills.</p>
+            <p id="ai-unclustered" class="hint"></p>
+          </section>
+        </div>
       </section>
       <div class="workspace">
         <nav id="skills" aria-label="Skills"></nav>

@@ -160,7 +160,7 @@ for (const variant of ['local', 'portable'] as const) {
     }
     assert.equal(element('#scan-error').hidden, true, element('#error-message').textContent!);
     const cards = () => [...document.querySelectorAll('#cluster-list .cluster')].map((card) => ({
-      words: card.querySelector('h4')!.firstChild!.textContent!.trim(),
+      words: card.querySelector('h5')!.firstChild!.textContent!.trim(),
       size: card.querySelector('.cluster-size')!.textContent,
       skills: [...card.querySelectorAll('button')].map((button) => button.textContent),
     }));

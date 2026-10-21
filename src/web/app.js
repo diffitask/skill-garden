@@ -121,12 +121,25 @@ function renderSkills() {
   else clearSelection();
 }
 
-/** Shared-word clusters from the scan, limited to the skills the filter shows. */
+/** Both cluster panels, limited to the skills the filter shows. */
 function renderClusters(shown) {
-  const container = document.querySelector('#cluster-list');
-  container.replaceChildren();
   const byId = new Map(shown.map((skill) => [skill.id, skill]));
   const clustering = scanData.clusterings?.find((level) => level.name === clusterLevel.value) ?? { clusters: [], unclustered: [] };
+  const words = renderClusterCards(document.querySelector('#cluster-list'), clustering, byId);
+  document.querySelector('#cluster-count').textContent = `${words.count} ${words.count === 1 ? 'cluster' : 'clusters'}`;
+  document.querySelector('#no-clusters').hidden = words.count !== 0 || !shown.length;
+  document.querySelector('#unclustered').textContent = notClustered(words.alone);
+  renderAiClusters(byId);
+  document.querySelector('#clusters').hidden = !shown.length;
+}
+
+function notClustered(count) {
+  return count ? `Not in a cluster: ${count} ${count === 1 ? 'skill' : 'skills'}` : '';
+}
+
+/** Cards of the clusters with shown members; returns how many clusters and lone skills are shown. */
+function renderClusterCards(container, clustering, byId) {
+  container.replaceChildren();
   let count = 0;
   for (const cluster of clustering.clusters) {
     const members = cluster.skills.map((id) => byId.get(id)).filter(Boolean);
@@ -134,7 +147,7 @@ function renderClusters(shown) {
     count++;
     const card = document.createElement('section');
     card.className = 'cluster';
-    const heading = document.createElement('h4');
+    const heading = document.createElement('h5');
     heading.textContent = cluster.words.join(' · ');
     const size = document.createElement('span');
     size.className = 'cluster-size';
@@ -158,12 +171,103 @@ function renderClusters(shown) {
     card.append(heading, skills);
     container.append(card);
   }
-  const alone = clustering.unclustered.filter((id) => byId.has(id)).length;
-  document.querySelector('#cluster-count').textContent = `${count} ${count === 1 ? 'cluster' : 'clusters'}`;
-  document.querySelector('#no-clusters').hidden = count !== 0 || !shown.length;
-  document.querySelector('#unclustered').textContent = alone ? `Not in a cluster: ${alone} ${alone === 1 ? 'skill' : 'skills'}` : '';
-  document.querySelector('#clusters').hidden = !shown.length;
+  return { count, alone: clustering.unclustered.filter((id) => byId.has(id)).length };
 }
+
+// AI clusters come from the local server, which runs `claude -p`; one answer per scan at a time.
+let aiResult = null;
+let aiRequest = 0;
+const aiButton = document.querySelector('#ai-cluster');
+const aiStatus = document.querySelector('#ai-status');
+const aiError = document.querySelector('#ai-error');
+const aiHelperUrl = document.querySelector('#ai-helper-url');
+const aiPairingCode = document.querySelector('#ai-pairing-code');
+for (const field of [aiHelperUrl, aiPairingCode]) field.addEventListener('input', () => { if (scanData) renderSkills(); });
+
+/** The portable page reaches `claude -p` through a local server it is paired with. */
+function aiEndpoint() {
+  if (typeof globalThis.skillAtlasScan !== 'function') return { url: '/api/ai-clusters', headers: {} };
+  let base;
+  try {
+    base = new URL(aiHelperUrl.value.trim());
+  } catch {
+    throw new Error('Enter the AI helper address, such as http://127.0.0.1:3000.');
+  }
+  if (!/^https?:$/.test(base.protocol)) throw new Error('Enter the AI helper address, such as http://127.0.0.1:3000.');
+  return { url: new URL('/api/ai-clusters', base).href, headers: { 'X-Skill-Atlas-Code': aiPairingCode.value.trim() } };
+}
+
+function renderAiClusters(byId) {
+  const portable = typeof globalThis.skillAtlasScan === 'function';
+  const busy = aiButton.hasAttribute('aria-busy');
+  const unpaired = portable && !aiPairingCode.value.trim();
+  aiButton.disabled = unpaired || busy || byId.size < 2;
+  aiButton.textContent = aiResult ? `Cluster ${byId.size} ${byId.size === 1 ? 'skill' : 'skills'} again` : `Cluster ${byId.size} ${byId.size === 1 ? 'skill' : 'skills'} with AI`;
+  if (!busy && !aiResult && aiError.hidden) {
+    aiStatus.textContent = byId.size < 2 ? 'AI clustering needs at least two shown skills.'
+      : unpaired ? 'Paste the pairing code from npm start to cluster with AI.' : '';
+  }
+  const container = document.querySelector('#ai-cluster-list');
+  if (!aiResult) {
+    container.replaceChildren();
+    document.querySelector('#ai-no-clusters').hidden = true;
+    document.querySelector('#ai-unclustered').textContent = '';
+    document.querySelector('#ai-cluster-count').textContent = 'Claude Haiku 4.5';
+    return;
+  }
+  const ai = renderClusterCards(container, aiResult, byId);
+  document.querySelector('#ai-cluster-count').textContent = `${ai.count} ${ai.count === 1 ? 'cluster' : 'clusters'}`;
+  document.querySelector('#ai-no-clusters').hidden = ai.count !== 0;
+  document.querySelector('#ai-unclustered').textContent = notClustered(ai.alone);
+}
+
+function resetAiClusters() {
+  aiRequest++;
+  aiResult = null;
+  aiButton.removeAttribute('aria-busy');
+  aiStatus.textContent = '';
+  aiError.hidden = true;
+  aiError.textContent = '';
+}
+
+aiButton.addEventListener('click', async () => {
+  if (!scanData || aiButton.hasAttribute('aria-busy')) return;
+  const skills = [...skillButtons.keys()].map((id) => scanData.skills.find((skill) => skill.id === id))
+    .map(({ id, name, description }) => ({ id, name, description }));
+  const request = ++aiRequest;
+  aiButton.setAttribute('aria-busy', 'true');
+  aiError.hidden = true;
+  aiStatus.textContent = `Asking Claude Haiku 4.5 to cluster ${skills.length} skills…`;
+  renderSkills();
+  try {
+    const endpoint = aiEndpoint();
+    let response;
+    try {
+      response = await fetch(endpoint.url, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...endpoint.headers }, body: JSON.stringify({ skills }),
+      });
+    } catch {
+      throw new Error(endpoint.headers['X-Skill-Atlas-Code'] === undefined
+        ? 'Could not reach the server. Check that it is still running, then try again.'
+        : `Could not reach the AI helper at ${new URL(endpoint.url).origin}. Start it with npm start, check the address, then try again.`);
+    }
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'AI clustering failed.');
+    if (request !== aiRequest) return;
+    aiResult = data;
+    aiStatus.textContent = `Claude Haiku 4.5 clustered ${skills.length} skills.`;
+  } catch (error) {
+    if (request !== aiRequest) return;
+    aiError.textContent = error instanceof Error ? error.message : 'AI clustering failed.';
+    aiError.hidden = false;
+    aiStatus.textContent = 'AI clustering failed. See the error below.';
+  } finally {
+    if (request === aiRequest) {
+      aiButton.removeAttribute('aria-busy');
+      if (scanData) renderSkills();
+    }
+  }
+});
 
 function renderTestData(repositories) {
   const tests = document.querySelector('#test-data');
@@ -204,6 +308,7 @@ form.addEventListener('submit', async (event) => {
   document.querySelector('#source').removeAttribute('href');
   list.replaceChildren();
   document.querySelector('#cluster-list').replaceChildren();
+  resetAiClusters();
   clusterLevel.replaceChildren();
   scanData = null;
   filterInput.value = '';
