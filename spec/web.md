@@ -8,6 +8,23 @@
 - Display a decorative pink flower beside Skill Atlas in the header, embedded in both views and hidden from assistive technology.
 - Both views have a sparse, static background of soft pastel flowers and leaves, embedded without external assets. Keep it behind the content, hidden from assistive technology, and unable to intercept clicks or keyboard focus; it must not add horizontal scrolling on narrow screens.
 - Serve the page, script, and stylesheet locally. Repository text is displayed as text, never executable markup. Support narrow screens and keyboard navigation.
+- Present the interface as a field guide: numbered Discover, Connect, and Understand sections,
+  with embedded decorative source, connection, and reading illustrations hidden from assistive
+  technology. Keep guidance legible and section surfaces opaque over the floral background.
+- Keep Filter skills next to the skill directory, with a distinct selected item and the reader
+  beside it on desktop, stacked on mobile. Provide a Browse skills link that skips the clusters.
+  After scanning, scroll to results. Selecting a cluster member focuses its skill heading and
+  scrolls to the reader, including on mobile; directory arrow-key navigation keeps its focus.
+- Skill clusters use a keyboard-operable disclosure, open after each new successful scan.
+  Collapsing it preserves results, selection, filter, and clustering; filtering does not reopen it.
+  Limit cluster-card height with scrolling so large collections do not push the reader far away.
+- In the portable view, put AI helper setup in a separate disclosure, initially collapsed.
+  Opening or closing it preserves address and code; explain the optional data transfer beside
+  the AI action. Keep the GitHub token field always visible. Keep test-data links visually
+  separate from skills and remove first-visit orientation steps after starting a scan.
+- Use decorative icons for What it does, Details, When to use, and Compatibility & cautions
+  without altering heading text or original description wording. Full instructions remain
+  an accessible disclosure. All sections fit viewports down to 320 CSS pixels.
 - Both views provide an accessible field labeled Filter skills for current results. Apply
   the word-filter rules in [analysis.md](analysis.md) immediately on input, without rescanning,
   file reads, or network requests. Show matching and total skill counts, preserving order,

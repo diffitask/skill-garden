@@ -10,6 +10,13 @@
 <body>
   <svg class="background-flowers" width="100%" height="100%" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
     <defs>
+      <symbol id="icon-source" viewBox="0 0 24 24"><path d="M8 5h11v14H8M5 8H3v13h13v-2M12 9l-2 3 2 3m3-6 2 3-2 3"/></symbol>
+      <symbol id="icon-network" viewBox="0 0 24 24"><path d="m8 7 8 2M7 9l3 8m6-5-3 5"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="10" r="3"/><circle cx="11" cy="20" r="2"/></symbol>
+      <symbol id="icon-book" viewBox="0 0 24 24"><path d="M12 5v15M3 4c4-1 6 0 9 2 3-2 5-3 9-2v14c-4-1-6 0-9 2-3-2-5-3-9-2Z"/></symbol>
+      <symbol id="icon-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m14 10 7-7m-5 0h5v5"/></symbol>
+      <symbol id="icon-notes" viewBox="0 0 24 24"><path d="M5 3h14v18H5ZM9 8h6m-6 4h6m-6 4h3"/></symbol>
+      <symbol id="icon-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6ZM12 8v5m0 3v.1"/></symbol>
+      <symbol id="icon-spark" viewBox="0 0 24 24"><path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5Z"/></symbol>
       <g id="background-flower">
         <path d="M0 0Q-5 22 2 42" fill="none" stroke="#acc2a3" stroke-width="1.5" stroke-linecap="round"/>
         <path d="M-1 28Q-17 29-15 17Q-4 17-1 28ZM0 20Q14 20 13 9Q3 10 0 20Z" fill="#c5d4b9"/>
@@ -34,8 +41,23 @@
   </svg>
   <header><a class="brand" href="/"><svg class="brand-flower" viewBox="0 0 40 48" width="32" height="38" aria-hidden="true" focusable="false"><path d="M20 24v21" fill="none" stroke="#53835a" stroke-width="2.5" stroke-linecap="round"/><path d="M20 38c-8 0-12-5-12-9 7 0 12 3 12 9Z" fill="#8eae76"/><path d="M20 33c7 0 11-4 11-8-6 0-11 3-11 8Z" fill="#6f965c"/><g fill="#e9a9b4"><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(0 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(45 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(90 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(135 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(180 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(225 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(270 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(315 20 17)"/></g><circle cx="20" cy="17" r="5.5" fill="#e8be58"/></svg><span>Skill Atlas</span></a><span class="badge">LOCAL EXPLORER</span></header>
   <main>
-    <section class="intro"><span class="eyebrow">A MAP OF WHAT YOUR AGENT CAN DO</span><h1>Explore repository and organization skills.</h1><p>Public organizations or individual repositories. Every skill. The instructions behind them.</p></section>
+    <section class="intro">
+      <div class="intro-copy"><span class="eyebrow">A FIELD GUIDE TO AGENT CAPABILITIES</span><h1>Small skills.<br><em>New possibilities.</em></h1><p>Explore the skills inside a GitHub repository or organization. Find what they do, when to use them, and how they connect.</p></div>
+      <div class="atlas-drawing" aria-hidden="true">
+        <svg viewBox="0 0 360 230" fill="none" focusable="false">
+          <ellipse cx="180" cy="116" rx="145" ry="93" stroke="currentColor" stroke-dasharray="3 7"/>
+          <path d="m84 61 94 53 104-57M178 114l-96 65m96-65 108 62" stroke="currentColor"/>
+          <g fill="#f8f5ed" stroke="currentColor"><rect x="50" y="35" width="65" height="48" rx="12" transform="rotate(-9 50 35)"/><rect x="253" y="32" width="65" height="48" rx="12" transform="rotate(9 253 32)"/><rect x="47" y="151" width="65" height="48" rx="12" transform="rotate(-6 47 151)"/><rect x="258" y="153" width="65" height="48" rx="12" transform="rotate(8 258 153)"/></g>
+          <g class="drawing-icons" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-source" x="66" y="42" width="27" height="27"/><use href="#icon-target" x="271" y="46" width="27" height="27"/><use href="#icon-notes" x="66" y="159" width="27" height="27"/><use href="#icon-spark" x="276" y="167" width="27" height="27"/></g>
+          <rect x="127" y="80" width="106" height="76" rx="12" fill="#e5ecdf" stroke="currentColor"/>
+          <text x="180" y="113" text-anchor="middle" fill="#315443" font-size="15" font-family="monospace">SKILL.md</text><path d="M151 126h57m-46 8h35" stroke="currentColor" stroke-linecap="round"/>
+          <circle cx="178" cy="18" r="4" fill="#e4bd79"/><circle cx="34" cy="111" r="3" fill="#d7a7b5"/><path d="m327 115 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" fill="#b7a6c9"/>
+        </svg>
+        <span>ONE FILE. A WHOLE NEW CAPABILITY.</span>
+      </div>
+    </section>
     <form id="repository-form">
+      <div class="section-heading"><span class="section-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#icon-source"/></svg></span><div><span class="eyebrow">01 / DISCOVER</span><h2>Where shall we explore?</h2></div></div>
       <label for="repository">GitHub repository or organization</label>
       <div class="input-row"><input id="repository" name="repository" type="text" placeholder="https://github.com/owner/repository" required autocomplete="url" spellcheck="false"><button id="scan" type="submit">Explore skills <span aria-hidden="true">↗</span></button></div>
       <p class="hint">Finds SKILL.md files on each default branch. Organization scans include public repositories only. Set GITHUB_TOKEN when starting the server for private repositories or higher limits.</p>
@@ -54,15 +76,14 @@
     <p id="scan-summary" role="status"></p>
     <div id="warnings" role="status" hidden></div>
     <section id="results" hidden aria-label="Repository skills">
-      <div class="results-heading"><h2 id="repo-name"></h2><span id="count" class="badge" role="status" aria-live="polite"></span></div>
-      <div class="skill-filter"><label for="filter-skills">Filter skills</label><input id="filter-skills" type="search" autocomplete="off" spellcheck="false" aria-controls="skills" aria-describedby="filter-help"><p id="filter-help" class="hint">Match every word in the skill name or description.</p></div>
-      <p id="no-matches" role="status" hidden>No skills match your filter</p>
+      <div class="results-heading"><div><span class="eyebrow">YOUR SKILL COLLECTION</span><h2 id="repo-name"></h2></div><div class="results-actions"><a href="#skill-library">Browse skills ↓</a><span id="count" class="badge" role="status" aria-live="polite"></span></div></div>
       <section id="clusters" aria-labelledby="clusters-title">
-        <h3 id="clusters-title">Skill clusters</h3>
+        <details id="cluster-disclosure" open>
+          <summary class="section-heading"><span class="section-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#icon-network"/></svg></span><span class="section-heading-copy"><span class="eyebrow">02 / CONNECT</span><span id="clusters-title" class="section-title">Skill clusters</span><span class="section-caption">Discover related skills. Select one to read its instructions.</span></span><span class="disclosure-label" aria-hidden="true">Explore connections <span class="chevron">⌄</span></span></summary>
         <div class="cluster-panels">
           <section class="cluster-panel" aria-labelledby="word-clusters-title">
             <div class="clusters-heading"><h4 id="word-clusters-title">Without AI</h4><span id="cluster-count" class="badge"></span></div>
-            <p class="hint">Skills grouped by the distinctive words of their names and descriptions; words most skills use count little. Select a skill to open it.</p>
+            <p class="panel-method">Shared words, useful connections.</p><p class="hint">Groups skills with similar names and descriptions. Adjust similarity to explore broader or closer matches.</p>
             <div class="cluster-level"><label for="cluster-level">Cluster similarity</label><select id="cluster-level" aria-controls="cluster-list"></select></div>
             <div id="cluster-list"></div>
             <p id="no-clusters" hidden>No skills share enough words to form a cluster.</p>
@@ -70,13 +91,15 @@
           </section>
           <section id="ai-clusters" class="cluster-panel" aria-labelledby="ai-clusters-title">
             <div class="clusters-heading"><h4 id="ai-clusters-title">With AI</h4><span id="ai-cluster-count" class="badge">Claude Haiku 4.5</span></div>
-            <p id="ai-help" class="hint">Claude Haiku 4.5 groups the shown skills by meaning through the local claude CLI (claude -p, no tools). Skill names and descriptions are sent to Claude.</p>
+            <p class="panel-method">A second perspective, by meaning.</p><p id="ai-help" class="hint">Claude Haiku 4.5 groups skills by meaning. Skill names and descriptions are sent to Claude when you choose to cluster.</p>
             <div id="ai-helper" class="ai-helper" hidden>
+              <details id="ai-setup"><summary>Connect your local AI helper</summary>
               <p class="hint">This page asks the local AI helper: run <code>npm start</code> in the Skill Atlas repository, with Claude Code installed and logged in, and paste the pairing code it prints. The code stays in this tab and is never saved.</p>
               <label for="ai-helper-url">AI helper address</label>
               <input id="ai-helper-url" type="url" value="http://127.0.0.1:3000" autocomplete="off" spellcheck="false">
               <label for="ai-pairing-code">Pairing code</label>
               <input id="ai-pairing-code" type="password" autocomplete="off" spellcheck="false" placeholder="Printed by npm start">
+              </details>
             </div>
             <button id="ai-cluster" type="button">Cluster with AI</button>
             <p id="ai-status" role="status"></p>
@@ -86,18 +109,25 @@
             <p id="ai-unclustered" class="hint"></p>
           </section>
         </div>
+        </details>
       </section>
+      <div id="skill-library" class="section-heading library-heading"><span class="section-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#icon-book"/></svg></span><div><span class="eyebrow">03 / UNDERSTAND</span><h3>Inside the skills</h3><p class="section-caption">Browse the collection. Open a skill to see where it fits.</p></div></div>
       <div class="workspace">
-        <nav id="skills" aria-label="Skills"></nav>
+        <aside class="library-sidebar" aria-label="Browse skills">
+          <div class="sidebar-heading"><h4>Skill directory</h4><span aria-hidden="true">A—Z</span></div>
+      <div class="skill-filter"><label for="filter-skills">Filter skills</label><input id="filter-skills" type="search" autocomplete="off" spellcheck="false" aria-controls="skills" aria-describedby="filter-help"><p id="filter-help" class="hint">Match every word in the skill name or description.</p></div>
+      <p id="no-matches" role="status" hidden>No skills match your filter</p>
+          <nav id="skills" aria-label="Skills"></nav>
+        </aside>
         <article id="detail">
           <div class="document-heading">
-            <div><span class="eyebrow">SKILL OVERVIEW</span><h2 id="skill-name"></h2></div>
+            <div><span class="eyebrow">SKILL FIELD NOTES</span><h2 id="skill-name" tabindex="-1"></h2></div>
             <a id="source" target="_blank" rel="noopener noreferrer">View on GitHub ↗</a>
           </div>
           <p id="skill-repository"></p>
           <div id="description" aria-label="Skill summary"></div>
           <details id="full-document">
-            <summary>Full SKILL.md <span>Original instructions</span></summary>
+            <summary><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-source"/></svg>Full SKILL.md <span>Original instructions</span></summary>
             <p id="path"></p>
             <pre id="content" tabindex="0" aria-label="SKILL.md contents"></pre>
           </details>
@@ -105,7 +135,14 @@
       </div>
     </section>
     <section id="test-data" aria-label="Test data, not skills"></section>
-    <section id="empty" class="empty"><span class="empty-icon" aria-hidden="true">⌘</span><h2 id="empty-title">Every skill has a story.</h2><p id="empty-message">Explore a repository to read its agent instructions, all in one place.</p></section>
+    <section id="empty" class="empty">
+      <span class="eyebrow">A LITTLE ORIENTATION</span><h2 id="empty-title">Every skill has a story.</h2><p id="empty-message">Start with a repository. Leave with a clearer picture of what your agent can do.</p>
+      <div id="empty-guide" class="empty-guide">
+        <div><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-source"/></svg><h3>Find the instructions</h3><p>Discover SKILL.md files across a repository or public organization.</p></div>
+        <div><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-network"/></svg><h3>Follow the connections</h3><p>Explore related skills through shared words or optional AI clustering.</p></div>
+        <div><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-book"/></svg><h3>Read the whole story</h3><p>See what each skill does, when it helps, and its original instructions.</p></div>
+      </div>
+    </section>
   </main>
   <footer><span>Skill Atlas</span><span>Read the skills. Understand the agent.</span></footer>
 </body>

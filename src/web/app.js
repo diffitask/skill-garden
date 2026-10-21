@@ -163,7 +163,8 @@ function renderClusterCards(container, clustering, byId) {
       button.addEventListener('click', () => {
         const target = skillButtons.get(skill.id);
         selectSkill(skill, target);
-        target.scrollIntoView?.({ block: 'nearest' });
+        document.querySelector('#skill-name').focus({ preventScroll: true });
+        detail.scrollIntoView?.({ block: 'start' });
       });
       item.append(button);
       skills.append(item);
@@ -300,6 +301,7 @@ form.addEventListener('submit', async (event) => {
   tokenInput.disabled = true;
   results.hidden = true;
   empty.hidden = true;
+  document.querySelector('#empty-guide').hidden = true;
   warnings.hidden = true;
   warnings.textContent = '';
   for (const selector of ['#repo-name', '#count', '#skill-name', '#skill-repository', '#description', '#path', '#content']) {
@@ -341,8 +343,10 @@ form.addEventListener('submit', async (event) => {
     // Smaller repositories share fewer distinctive words, so they start with looser clusters.
     clusterLevel.replaceChildren(...(data.clusterings ?? []).map((level) => new Option(`${level.name} · ${level.clusters.length} ${level.clusters.length === 1 ? 'cluster' : 'clusters'}`, level.name)));
     clusterLevel.value = data.skills.length < 50 ? 'Loose' : 'Balanced';
+    document.querySelector('#cluster-disclosure').open = true;
     renderSkills();
     results.hidden = false;
+    results.scrollIntoView?.({ block: 'start' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to scan the repository.';
     const limited = /rate limit/i.test(message);
@@ -420,6 +424,15 @@ function renderDescription(description) {
     section.className = `summary-block summary-${key}`;
     const heading = document.createElement('h3');
     heading.textContent = title;
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute('class', 'icon');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.setAttribute('focusable', 'false');
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    const icons = { overview: 'spark', details: 'notes', usage: 'target', cautions: 'shield' };
+    use.setAttribute('href', `#icon-${icons[key]}`);
+    icon.append(use);
+    heading.prepend(icon);
     section.append(heading);
     if (groups[key].length === 1) {
       const paragraph = document.createElement('p');
