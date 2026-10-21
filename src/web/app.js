@@ -16,6 +16,8 @@ let selectedSkill = null;
 let skillButtons = new Map();
 
 filterInput.addEventListener('input', () => { if (scanData) renderSkills(); });
+const clusterLevel = document.querySelector('#cluster-level');
+clusterLevel.addEventListener('change', () => { if (scanData) renderSkills(); });
 list.addEventListener('keydown', (event) => {
   const items = [...list.querySelectorAll('button')];
   const index = items.indexOf(event.target);
@@ -124,7 +126,7 @@ function renderClusters(shown) {
   const container = document.querySelector('#cluster-list');
   container.replaceChildren();
   const byId = new Map(shown.map((skill) => [skill.id, skill]));
-  const clustering = scanData.clustering ?? { clusters: [], unclustered: [] };
+  const clustering = scanData.clusterings?.find((level) => level.name === clusterLevel.value) ?? { clusters: [], unclustered: [] };
   let count = 0;
   for (const cluster of clustering.clusters) {
     const members = cluster.skills.map((id) => byId.get(id)).filter(Boolean);
@@ -202,6 +204,7 @@ form.addEventListener('submit', async (event) => {
   document.querySelector('#source').removeAttribute('href');
   list.replaceChildren();
   document.querySelector('#cluster-list').replaceChildren();
+  clusterLevel.replaceChildren();
   scanData = null;
   filterInput.value = '';
   clearSelection();
@@ -230,6 +233,9 @@ form.addEventListener('submit', async (event) => {
       return;
     }
     scanData = data;
+    // Smaller repositories share fewer distinctive words, so they start with looser clusters.
+    clusterLevel.replaceChildren(...(data.clusterings ?? []).map((level) => new Option(`${level.name} · ${level.clusters.length} ${level.clusters.length === 1 ? 'cluster' : 'clusters'}`, level.name)));
+    clusterLevel.value = data.skills.length < 50 ? 'Loose' : 'Balanced';
     renderSkills();
     results.hidden = false;
   } catch (error) {

@@ -1,4 +1,4 @@
-import { clusterSkills, type Clustering } from './cluster.ts';
+import { clusterLevels, type ClusterLevel } from './cluster.ts';
 import { fileLink, skillLink } from './model.ts';
 import { scan, type Source } from './scan.ts';
 
@@ -15,7 +15,7 @@ export async function scanWithContents(source: Source) {
   })) };
 }
 
-/** Add shared-word clusters of every skill in the result: one repository or a whole organization. */
-export function withClusters<T extends { skills: { id: string; name: string; description: string }[] }>(result: T): T & { clustering: Clustering } {
-  return { ...result, clustering: clusterSkills(result.skills) };
+/** Add topic clusters of every skill in the result, one repository or a whole organization, at each level. */
+export function withClusters<T extends { skills: { id: string; name: string; description: string }[] }>(result: T): T & { clusterings: ClusterLevel[] } {
+  return { ...result, clusterings: clusterLevels(result.skills) };
 }

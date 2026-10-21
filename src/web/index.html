@@ -35,7 +35,8 @@
       <p id="no-matches" role="status" hidden>No skills match your filter</p>
       <section id="clusters" aria-labelledby="clusters-title">
         <div class="clusters-heading"><h3 id="clusters-title">Skill clusters</h3><span id="cluster-count" class="badge"></span></div>
-        <p class="hint">Skills that share at least two significant words in their names and descriptions. Select a skill to open it.</p>
+        <p class="hint">Skills grouped by the distinctive words of their names and descriptions; words most skills use count little. Select a skill to open it.</p>
+        <div class="cluster-level"><label for="cluster-level">Cluster similarity</label><select id="cluster-level" aria-controls="cluster-list"></select></div>
         <div id="cluster-list"></div>
         <p id="no-clusters" hidden>No skills share enough words to form a cluster.</p>
         <p id="unclustered" class="hint"></p>

@@ -4,7 +4,7 @@ import type { AddressInfo } from 'node:net';
 import { test } from 'node:test';
 import { JSDOM, VirtualConsole } from 'jsdom';
 import { portableHtml } from '../scripts/build-web.ts';
-import { clusterSkills, skillWords } from '../src/core/cluster.ts';
+import { CLUSTER_LEVELS, clusterLevels, clusterSkills, skillWords, stem } from '../src/core/cluster.ts';
 import { openGitHub } from '../src/core/github.ts';
 import { replay, type Recording } from '../src/core/replay.ts';
 import { scanTarget } from '../src/core/target.ts';
@@ -14,52 +14,85 @@ import { ORG, organizationFixture } from './organization-fixture.ts';
 
 const skill = (name: string, description = '') => ({ id: `repo:${name}`, name, description });
 const ids = (...names: string[]) => names.map((name) => `repo:${name}`);
+const names = (clusters: { skills: string[] }[]) => clusters.map((cluster) => cluster.skills.map((id) => id.slice('repo:'.length)));
 
-test('significant words: lowercase, split at punctuation, no short, numeric, or stop words, plurals folded', () => {
+test('terms: lowercase stems split at punctuation, without short, numeric, or stop words', () => {
+  assert.deepEqual(['tests', 'testing', 'tested', 'mapped', 'libraries', 'classes', 'fixes', 'process', 'status', 'analysis', 'string'].map(stem),
+    ['test', 'test', 'test', 'map', 'library', 'class', 'fix', 'process', 'status', 'analysis', 'string']);
   assert.deepEqual([...skillWords(skill('code-review', 'Use this skill to review Pull_Requests and 2024 diffs; process v1.0 of the agent.'))],
     ['code', 'review', 'pull', 'request', 'diff', 'process']);
   assert.deepEqual([...skillWords(skill('Ünïcode-Tests', undefined as unknown as string))], ['ünïcode', 'test']);
 });
 
-test('skills sharing two words are clustered, links chain, and one shared word is not enough', () => {
-  const skills = [
-    skill('zeta', 'Formats kotlin sources.'),
-    skill('code-review', 'Reviews code changes.'),
-    skill('lint', 'Formats kotlin code.'),
-    skill('review-bot', 'Leaves review comments on code.'),
-    skill('release', 'Publishes release notes.'),
-    skill('notes', 'Writes release notes for changelogs.'),
-    skill('lonely', 'Reviews nothing in common.'),
-  ];
-  const { clusters, unclustered } = clusterSkills(skills);
-  assert.deepEqual(unclustered, ids('lonely'), 'One shared word does not link');
-  assert.deepEqual(clusters.map((cluster) => cluster.skills), [ids('code-review', 'review-bot'), ids('zeta', 'lint'), ids('release', 'notes')]);
-  assert.deepEqual(clusters.map((cluster) => cluster.words), [['code', 'review'], ['format', 'kotlin'], ['note', 'release']]);
-  // A bridging skill chains two clusters into one.
-  const chained = clusterSkills([...skills, skill('bridge', 'Kotlin code format review')]).clusters;
-  assert.deepEqual(chained[0].skills, ids('zeta', 'code-review', 'lint', 'review-bot', 'bridge'));
-  assert.deepEqual(chained[0].words, ['code', 'format', 'kotlin', 'review'], 'Most shared first, then alphabetical');
-  assert.deepEqual(clusterSkills(skills, 3).clusters, []);
+const kotlin = [
+  skill('kotlin-format', 'Formats Kotlin sources with ktlint in this repository.'),
+  skill('kotlin-lint', 'Lints Kotlin sources with ktlint rules in this repository.'),
+];
+const release = [
+  skill('release-notes', 'Writes release notes and the changelog for this repository.'),
+  skill('changelog', 'Updates the changelog with release notes in this repository.'),
+];
+const noise = [
+  skill('triage', 'Labels new issues in this repository.'),
+  skill('docs', 'Publishes the documentation site from this repository.'),
+];
+
+test('skills cluster by distinctive shared terms; a term every skill uses does not link', () => {
+  const { clusters, unclustered } = clusterSkills([...kotlin, ...release, ...noise], { threshold: 0.08 });
+  assert.deepEqual(names(clusters), [['release-notes', 'changelog'], ['kotlin-format', 'kotlin-lint']], 'Equal sizes: by label');
+  assert.deepEqual(clusters.map((cluster) => cluster.words), [['changelog', 'notes', 'release', 'repository'], ['kotlin', 'ktlint', 'sources', 'repository']]);
+  assert.deepEqual(unclustered, ids('triage', 'docs'), '"repository" alone, in every skill, links nothing');
+  assert.deepEqual(clusterSkills([skill('a', 'Shared words here.'), skill('b', 'Shared words here.')]).clusters,
+    [{ words: ['shared', 'words'], skills: ids('a', 'b') }], 'Two skills alone still cluster');
   assert.deepEqual(clusterSkills([]), { clusters: [], unclustered: [] });
+});
+
+test('average linkage: a bridging skill similar to two topics does not chain them together', () => {
+  const bridge = skill('bridge', 'Kotlin ktlint changelog release.');
+  const loose = { threshold: 0.08 };
+  assert.deepEqual(names(clusterSkills([...kotlin, bridge, ...noise], loose).clusters), [['kotlin-format', 'kotlin-lint', 'bridge']]);
+  assert.deepEqual(names(clusterSkills([...release, bridge, ...noise], loose).clusters), [['release-notes', 'changelog', 'bridge']]);
+  assert.deepEqual(names(clusterSkills([...kotlin, ...release, bridge, ...noise], loose).clusters),
+    [['release-notes', 'changelog', 'bridge'], ['kotlin-format', 'kotlin-lint']]);
+});
+
+test('levels share one run of merges: stricter levels split looser clusters, never join them', () => {
+  const skills = [...kotlin, ...release, skill('kotlin-release', 'Formats Kotlin sources, lints with ktlint, writes release notes and the changelog for this repository.'), ...noise];
+  const levels = clusterLevels(skills);
+  assert.deepEqual(levels.map(({ name, threshold }) => ({ name, threshold })), CLUSTER_LEVELS.map(({ name, threshold }) => ({ name, threshold })));
+  assert.deepEqual(levels.map((level) => names(level.clusters)), [
+    [['kotlin-format', 'kotlin-lint', 'release-notes', 'changelog', 'kotlin-release']],
+    [['kotlin-format', 'kotlin-lint', 'release-notes', 'changelog', 'kotlin-release']],
+    [['release-notes', 'changelog', 'kotlin-release'], ['kotlin-format', 'kotlin-lint']],
+  ]);
+  for (const [strict, loose] of [[levels[2], levels[1]], [levels[1], levels[0]]]) {
+    for (const cluster of strict.clusters) assert.ok(loose.clusters.some((other) => cluster.skills.every((id) => other.skills.includes(id))));
+  }
+  assert.deepEqual(clusterSkills(skills, { threshold: 0.2 }), { clusters: levels[2].clusters, unclustered: levels[2].unclustered });
 });
 
 test('an organization clusters skills across repositories, ignoring copies and test data', async () => {
   const github = { fetch: replay(organizationFixture()) };
   const result = withClusters(await scanTarget(ORG, (url) => openGitHub(url, github), github, scanWithContents));
-  assert.deepEqual(result.clustering, { clusters: [
-    { words: ['aaa', 'elsewhere'], skills: ['Example/alpha:docs/elsewhere/SKILL.md', 'Example/zebra:docs/elsewhere/SKILL.md'] },
-    { words: ['name', 'same', 'testing'], skills: ['Example/alpha:.agents/skills/shared/SKILL.md', 'Example/zebra:.agents/skills/shared/SKILL.md'] },
-  ], unclustered: [] });
+  assert.deepEqual(result.clusterings.map((level) => level.name), ['Loose', 'Balanced', 'Strict']);
+  for (const level of result.clusterings) {
+    assert.deepEqual(level.clusters.map((cluster) => cluster.skills), [
+      ['Example/alpha:docs/elsewhere/SKILL.md', 'Example/zebra:docs/elsewhere/SKILL.md'],
+      ['Example/alpha:.agents/skills/shared/SKILL.md', 'Example/zebra:.agents/skills/shared/SKILL.md'],
+    ]);
+    assert.deepEqual(level.unclustered, []);
+  }
 });
 
 const commit = 'c1u5t3r';
 const files = new Map([
-  ['.claude/skills/code-review/SKILL.md', 'Reviews code changes.'],
-  ['.claude/skills/review-bot/SKILL.md', 'Leaves review comments on code.'],
+  ['.claude/skills/code-review/SKILL.md', 'Reviews code changes in pull requests.'],
+  ['.claude/skills/review-bot/SKILL.md', 'Leaves review comments on pull requests.'],
   ['skills/lint/SKILL.md', 'Formats kotlin sources.'],
-  ['skills/kotlin-style/SKILL.md', 'Kotlin formats <b>bold</b>.'],
+  ['skills/kotlin-style/SKILL.md', 'Kotlin formats <b>bold</b> sources.'],
   ['skills/lonely/SKILL.md', 'Nothing in common.'],
-  ['tests/data/code-review-copy/SKILL.md', 'Reviews code changes.'],
+  ['skills/pull-stats/SKILL.md', 'Counts pull requests per week.'],
+  ['tests/data/code-review-copy/SKILL.md', 'Reviews code changes in pull requests.'],
 ]);
 
 function recordedGitHub(requests: string[]) {
@@ -133,15 +166,28 @@ for (const variant of ['local', 'portable'] as const) {
     }));
     assert.equal(element('#clusters').hidden, false);
     assert.equal(element('#clusters-title').textContent, 'Skill clusters');
+    const level = document.querySelector<HTMLSelectElement>('#cluster-level')!;
+    assert.equal(document.querySelector('label[for="cluster-level"]')!.textContent, 'Cluster similarity');
+    assert.deepEqual([...level.options].map((option) => option.textContent), ['Loose · 2 clusters', 'Balanced · 2 clusters', 'Strict · 2 clusters']);
+    assert.equal(level.value, 'Loose', 'Under 50 skills, start loose');
     assert.deepEqual(cards(), [
-      { words: 'code · review', size: '2 skills', skills: ['code-review', 'review-bot'] },
-      { words: 'format · kotlin', size: '2 skills', skills: ['kotlin-style', 'lint'] },
+      { words: 'review · pull · requests', size: '3 skills', skills: ['code-review', 'pull-stats', 'review-bot'] },
+      { words: 'kotlin · formats · sources', size: '2 skills', skills: ['kotlin-style', 'lint'] },
     ]);
     assert.equal(element('#cluster-count').textContent, '2 clusters');
     assert.equal(element('#unclustered').textContent, 'Not in a cluster: 1 skill');
     assert.equal(element('#no-clusters').hidden, true);
     assert.equal(document.querySelector('#cluster-list b'), null, 'Descriptions never become markup');
     const initialRequests = [...requests];
+    level.value = 'Balanced';
+    level.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+    assert.deepEqual(cards(), [
+      { words: 'kotlin · formats · sources', size: '2 skills', skills: ['kotlin-style', 'lint'] },
+      { words: 'review · pull · requests', size: '2 skills', skills: ['code-review', 'review-bot'] },
+    ]);
+    assert.equal(element('#unclustered').textContent, 'Not in a cluster: 2 skills');
+    level.value = 'Loose';
+    level.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
 
     const member = [...document.querySelectorAll<HTMLButtonElement>('#cluster-list button')].find((button) => button.textContent === 'lint')!;
     member.click();
@@ -157,10 +203,10 @@ for (const variant of ['local', 'portable'] as const) {
       filter.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
     };
     filterBy('comments');
-    assert.deepEqual(cards(), [{ words: 'code · review', size: '1 skill', skills: ['review-bot'] }]);
+    assert.deepEqual(cards(), [{ words: 'review · pull · requests', size: '1 skill', skills: ['review-bot'] }]);
     assert.equal(element('#cluster-count').textContent, '1 cluster');
     assert.equal(element('#unclustered').textContent, '');
-    filterBy('common');
+    filterBy('nothing');
     assert.deepEqual(cards(), []);
     assert.equal(element('#no-clusters').hidden, false);
     assert.equal(element('#no-clusters').textContent, 'No skills share enough words to form a cluster.');
@@ -170,6 +216,10 @@ for (const variant of ['local', 'portable'] as const) {
     filterBy('');
     assert.equal(cards().length, 2);
     assert.deepEqual(requests, initialRequests, 'Clusters are computed once per scan');
+    form.dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+    assert.equal(level.options.length, 0, 'A new scan resets the levels');
+    while (form.hasAttribute('aria-busy')) await new Promise((resolve) => setTimeout(resolve, 10));
+    assert.equal(level.value, 'Loose');
     assert.deepEqual(errors, []);
   });
 }
