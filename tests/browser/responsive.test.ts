@@ -94,13 +94,13 @@ for (const variant of ['server', 'portable'] as const) {
     assert.equal(await mark.getAttribute('aria-hidden'), 'true');
     assert.equal(await mark.getAttribute('focusable'), 'false');
     assert.equal(await page.locator('#skill-flower svg').evaluate((el) => el.outerHTML), originalMark, 'Reader repeats the selected skill’s exact flower');
-    assert.equal(await page.locator('#cluster-list button').first().locator('svg').evaluate((el) => el.outerHTML), originalMark, 'Cluster members repeat directory marks');
-    const bouquet = await page.locator('#cluster-list .flower-bouquet').first().evaluate((el) => el.outerHTML);
+    assert.equal(await page.locator('.cluster .skill-flower, .flower-bouquet').count(), 0, 'Cluster labels and members stay free of floral icons');
+    const clusterClass = await page.locator('#cluster-list .cluster').first().getAttribute('class');
     const firstName = await page.locator('#skills strong').first().textContent();
     await page.locator('#filter-skills').fill(firstName!);
     assert.equal(await page.locator('#skills button').count(), 1);
     assert.equal(await page.locator('#skills button svg').evaluate((el) => el.outerHTML), originalMark);
-    assert.equal(await page.locator('#cluster-list .flower-bouquet').first().evaluate((el) => el.outerHTML), bouquet, 'Filtering does not redraw a cluster’s bouquet');
+    assert.equal(await page.locator('#cluster-list .cluster').first().getAttribute('class'), clusterClass, 'Filtering preserves a cluster’s tint');
     await page.locator('#filter-skills').fill('');
     assert.equal(await page.locator('#filter-help').evaluate((el) => getComputedStyle(el).position), 'absolute', 'Filter help stays available without visual clutter');
     assert.match(await page.locator('#ai-help').textContent() ?? '', /Sends names and descriptions to Claude/);
@@ -144,6 +144,15 @@ for (const variant of ['server', 'portable'] as const) {
     }
     for (const width of [320, 375, 720, 1280]) {
       await page.setViewportSize({ width, height: 900 });
+      const panels = await page.locator('.cluster-panel').evaluateAll((elements) => elements.map((el) => {
+        const rect = el.getBoundingClientRect();
+        const style = getComputedStyle(el);
+        return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
+          border: parseFloat(style.borderLeftWidth), radius: parseFloat(style.borderRadius) };
+      }));
+      assert.ok(panels.every((panel) => panel.border >= 1 && panel.radius >= 10), 'Both methods have distinct rounded panel boundaries');
+      assert.ok(width > 720 ? panels[0]!.right < panels[1]!.left && panels[0]!.top === panels[1]!.top
+        : panels[0]!.bottom < panels[1]!.top, 'Panels sit separately side by side on desktop and stack on mobile');
       for (const level of ['Loose', 'Balanced', 'Strict']) {
         await page.locator('#cluster-level').selectOption(level);
         const layout = await page.evaluate<Layout>(() => {

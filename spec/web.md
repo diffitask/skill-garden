@@ -22,12 +22,16 @@
   and reuse. Both the heading and invitation stay large on mobile; the bloom line is smaller
   than both. Show a self-contained botanical specimen illustration on desktop.
 - Give every skill a decorative flower derived deterministically from its stable skill ID.
-  Repeat exactly the same mark beside its directory name, cluster-member name, and reader
+  Repeat exactly the same mark beside its directory name and reader
   heading. Marks vary in petal count, shape, and muted color; they never imply inferred skill
   categories. Do not use source text as SVG markup. Flowers are hidden from assistive technology,
   unfocusable, static, and never fetch assets or modify original skill names or descriptions.
-- Present clusters as bouquets: show up to three members’ flower marks beside each cluster
-  heading, chosen from the complete sorted membership so filtering does not change the bouquet.
+- Present Without AI and With AI as two distinct bordered, rounded panels side by side on
+  desktop and stacked on mobile. Each panel contains its own cluster cards and controls.
+  Keep cluster headings and member buttons free of flower icons. Give cards subtle mint,
+  lavender, blush, blue, or cream tints with dark legible text. Derive the tint from complete
+  sorted membership so filtering does not change a surviving cluster’s color. Keep text labels
+  and membership explicit; colors do not encode inferred categories or replace labels.
   Skill marks remain stable after filtering, selection, similarity changes, and rescanning the
   same source. Clear the reader’s flower when selection is empty. Both views retain keyboard
   navigation and fit 320px layouts with long skill names and cluster labels.

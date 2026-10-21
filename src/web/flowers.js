@@ -9,9 +9,18 @@ const palettes = [
   ['#a8bc8f', '#dce8cb', '#809b66'],
 ];
 
-export function flowerMarkup(seed) {
+function visualHash(seed) {
   let hash = 2166136261;
   for (const character of String(seed)) hash = Math.imul(hash ^ character.codePointAt(0), 16777619) >>> 0;
+  return hash;
+}
+
+export function clusterTone(ids) {
+  return `cluster-tone-${visualHash(JSON.stringify([...ids].sort())) % 5}`;
+}
+
+export function flowerMarkup(seed) {
+  const hash = visualHash(seed);
   const [petal, light, edge] = palettes[hash % palettes.length];
   const petals = 5 + ((hash >>> 4) % 5);
   const width = 4 + ((hash >>> 8) % 4) * .6;
@@ -29,12 +38,4 @@ export function createFlower(seed) {
   const template = document.createElement('template');
   template.innerHTML = flowerMarkup(seed);
   return template.content.firstElementChild;
-}
-
-export function createBouquet(seeds) {
-  const bouquet = document.createElement('span');
-  bouquet.className = 'flower-bouquet';
-  bouquet.setAttribute('aria-hidden', 'true');
-  for (const seed of [...seeds].sort().slice(0, 3)) bouquet.append(createFlower(seed));
-  return bouquet;
 }

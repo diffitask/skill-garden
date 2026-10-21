@@ -1,5 +1,5 @@
 import { renderSkillDocument, copyMarkdown } from './document.js';
-import { createFlower, createBouquet } from './flowers.js';
+import { createFlower, clusterTone } from './flowers.js';
 
 const flowerStudy = document.querySelector('#flower-study');
 for (const seed of ['garden-rose', 'garden-lilac', 'garden-gold', 'garden-blue', 'garden-coral']) {
@@ -217,12 +217,12 @@ function renderClusterCards(container, clustering, byId) {
     if (!members.length) continue;
     count++;
     const card = document.createElement('section');
-    card.className = 'cluster';
+    card.className = `cluster ${clusterTone(cluster.skills)}`;
     const heading = document.createElement('h5');
     const label = document.createElement('span');
     label.className = 'cluster-label';
     label.textContent = cluster.words.join(' · ');
-    heading.append(createBouquet(cluster.skills), label);
+    heading.append(label);
     const size = document.createElement('span');
     size.className = 'cluster-size';
     size.textContent = `${members.length} ${members.length === 1 ? 'skill' : 'skills'}`;
@@ -232,7 +232,7 @@ function renderClusterCards(container, clustering, byId) {
       const item = document.createElement('li');
       const button = document.createElement('button');
       button.type = 'button';
-      button.append(createFlower(skill.id), document.createTextNode(skill.name));
+      button.textContent = skill.name;
       if (scanData.organization) button.title = skill.repository;
       button.addEventListener('click', () => {
         const target = skillButtons.get(skill.id);
