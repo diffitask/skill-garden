@@ -43,6 +43,10 @@
   while waiting; show a missing CLI, a login error, a timeout, or a malformed answer as an alert in
   the panel, retryable. The filter limits shown AI clusters as for word clusters. A new scan
   discards AI clusters and ignores a late answer.
+- AI results cover only the skills sent with that request. Shown skills that were not sent, because
+  the filter changed during or after the request, are counted separately as Not sent to Claude, with a
+  prompt to cluster again. They are never counted as Not in a cluster. Claude found no clusters among
+  these skills appears only if at least one shown skill was sent.
 - The portable page has no CLI; it asks a paired local **AI helper**, the `npm start` server, in the
   same window. Its With AI panel adds an AI helper address field (`http://127.0.0.1:3000` by
   default) and a Pairing code password field, kept in the current tab only, never in storage,
