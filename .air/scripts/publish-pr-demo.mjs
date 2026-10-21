@@ -10,9 +10,15 @@ function target(env) {
   for (const key of ['PR_HEAD_SHA', 'PR_BASE_SHA']) {
     if (!/^[a-f0-9]{40}$/.test(env[key] ?? '')) throw new Error(`Invalid ${key}`);
   }
+  if (env.DEMO_REVISION !== undefined &&
+      (!/^[1-9]\d*$/.test(env.DEMO_REVISION) || !Number.isSafeInteger(Number(env.DEMO_REVISION)) || Number(env.DEMO_REVISION) < 2)) {
+    throw new Error('Invalid DEMO_REVISION: use an explicit presentation revision >=2');
+  }
+  const prefix = `<!-- pr-demo:v1:${env.PR_HEAD_SHA}`;
   return {
     root: `repos/${env.DEMO_REPOSITORY}`, number: Number(env.PR_NUMBER),
-    marker: `<!-- pr-demo:v1:${env.PR_HEAD_SHA} -->`,
+    marker: `${prefix}${env.DEMO_REVISION ? `:r${env.DEMO_REVISION}` : ''} -->`,
+    headMarker: new RegExp(`^${prefix}(?::r[1-9][0-9]*)? -->\\n`),
   };
 }
 
@@ -24,13 +30,14 @@ function eligible(pr, env) {
 
 // Sequential deduplication, not a lock: callers must serialize overlapping runs.
 export async function inspectDemo(env, request) {
-  const { root, number, marker } = target(env);
+  const { root, number, marker, headMarker } = target(env);
   const path = `${root}/pulls/${number}`;
   if (!eligible(await request('GET', path), env)) return { skipped: true, reason: 'PR is no longer eligible' };
   for (let page = 1; ; page++) {
     const comments = await request('GET', `${root}/issues/${number}/comments?per_page=100&page=${page}`);
     if (!Array.isArray(comments)) throw new Error('Invalid GitHub comments response');
-    const existing = comments.find((comment) => typeof comment.body === 'string' && comment.body.startsWith(`${marker}\n`));
+    const existing = comments.find((comment) => typeof comment.body === 'string' &&
+      (env.DEMO_REVISION ? comment.body.startsWith(`${marker}\n`) : headMarker.test(comment.body)));
     if (existing) return { skipped: true, reason: 'Demo already published for this head', html_url: existing.html_url };
     if (comments.length < 100) break;
   }

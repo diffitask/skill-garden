@@ -80,6 +80,24 @@ test('demo deduplication traverses all comment pages', async () => {
   assert.ok(f.calls.includes('GET repos/owner/repo/issues/8/comments?per_page=100&page=2'));
 });
 
+test('explicit presentation revisions append once without overwriting the first video or allowing automatic duplicates', async () => {
+  const f = fixture();
+  await publishDemo(env, f.request);
+  const original = structuredClone(f.comments.at(-1));
+  const revised = { ...env, DEMO_REVISION: '2' };
+  assert.equal((await inspectDemo(revised, f.request)).skipped, false);
+  assert.equal((await publishDemo(revised, f.request)).skipped, false);
+  assert.ok(f.comments.at(-1).body.startsWith(`<!-- pr-demo:v1:${head}:r2 -->\n`));
+  assert.deepEqual(f.comments[1], original);
+  assert.equal((await publishDemo(revised, f.request)).skipped, true);
+  assert.equal((await publishDemo(env, f.request)).skipped, true);
+  assert.equal(f.writes.length, 2);
+  const revisionFirst = fixture();
+  await publishDemo(revised, revisionFirst.request);
+  assert.equal((await inspectDemo(env, revisionFirst.request)).skipped, true);
+  assert.equal(revisionFirst.writes.length, 1);
+});
+
 test('closed, draft, fork, wrong base/repository, superseded and non-green PRs never publish', async () => {
   const changes = [
     (pr: any) => { pr.state = 'closed'; }, (pr: any) => { pr.draft = true; },
@@ -111,6 +129,7 @@ test('invalid target, empty/oversized report and invalid media URLs fail before 
     { DEMO_MESSAGE: '' }, { DEMO_MESSAGE: 'x'.repeat(60001) },
     { DEMO_VIDEO_URL: '' }, { DEMO_VIDEO_URL: 'file:///tmp/demo.webm' }, { DEMO_VIDEO_URL: 'http://example.org/demo.webm' },
     { DEMO_VIDEO_URL: 'https://token@example.org/demo.webm' }, { DEMO_PREVIEW_URL: 'http://example.org/preview.png' },
+    ...['', '1', '0', '-2', '02', '2.0', '9007199254740992'].map((DEMO_REVISION) => ({ DEMO_REVISION })),
   ]) {
     const f = fixture();
     await assert.rejects(publishDemo({ ...env, ...overrides }, f.request));
