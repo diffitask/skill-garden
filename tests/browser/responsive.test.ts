@@ -77,8 +77,10 @@ for (const variant of ['server', 'portable'] as const) {
     const resultBounds = await page.locator('#results').boundingBox();
     assert.ok(resultBounds && resultBounds.y >= 0 && resultBounds.y < 150, 'A scan brings the results into view');
     assert.equal(await page.locator('#skills button').count(), 2);
-    assert.equal(await page.locator('.intro-copy .eyebrow').textContent(), 'SKILLS, LIKE FLOWERS');
-    assert.equal(await page.locator('.intro-link').textContent(), 'Explore them ↗');
+    assert.equal(await page.locator('.intro-copy .eyebrow').textContent(), 'A GARDEN OF AI AGENT SKILLS');
+    assert.equal(await page.locator('.intro-copy h1').textContent(), 'Skills, like flowers.');
+    assert.equal(await page.locator('.intro-tagline').textContent(), 'Similar and unique.');
+    assert.equal(await page.locator('.intro-link').textContent(), 'Discover them ↗');
     const mark = page.locator('#skills button').first().locator('.skill-flower');
     const originalMark = await mark.evaluate((el) => el.outerHTML);
     const otherMark = await page.locator('#skills button').nth(1).locator('.skill-flower').evaluate((el) => el.outerHTML);
