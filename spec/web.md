@@ -20,6 +20,10 @@
 - Skill clusters use a keyboard-operable disclosure, open after each new successful scan.
   Collapsing it preserves results, selection, filter, and clustering; filtering does not reopen it.
   Limit cluster-card height with scrolling so large collections do not push the reader far away.
+- All disclosures (clusters, AI helper, Full SKILL.md, and skill metadata) use a consistent small
+  rounded chevron on the left beside the label. Hide native triangle markers, turn the chevron
+  when open, and respect reduced motion. Keep the entire heading clickable and keyboard-operable;
+  nested disclosures keep independent state. Controls stay aligned within 320px layouts.
 - In the portable view, put AI helper setup in a separate disclosure, initially collapsed.
   Opening or closing it preserves address and code; explain the optional data transfer beside
   the AI action. Keep the GitHub token field always visible. Keep test-data links visually
