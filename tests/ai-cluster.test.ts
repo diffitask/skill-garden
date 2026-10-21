@@ -212,7 +212,8 @@ test('local web: With AI beside Without AI clusters the shown skills on request,
 
   const panels = [...document.querySelectorAll('.cluster-panels > .cluster-panel h4')].map((heading) => heading.textContent);
   assert.deepEqual(panels, ['Without AI', 'With AI'], 'Without AI on the left, With AI on the right');
-  assert.match(element('#ai-help').textContent!, /Claude Haiku 4\.5.*sent to Claude/);
+  assert.equal(element('#ai-cluster-count').textContent, 'Claude Haiku 4.5');
+  assert.match(element('#ai-help').textContent!, /Sends names and descriptions to Claude/);
   assert.equal(button.textContent, 'Cluster 4 skills with AI');
   assert.equal(button.disabled, false);
   assert.deepEqual(cards(), []);

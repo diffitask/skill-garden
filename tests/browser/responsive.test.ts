@@ -68,8 +68,9 @@ for (const variant of ['server', 'portable'] as const) {
     assert.ok(decoration.zIndex < 0, 'Flowers sit behind the content');
     assert.equal(decoration.animation, 'none');
     assert.ok(decoration.flowers > 0, 'Both views embed the floral artwork');
-    assert.equal(await page.locator('#empty-guide').isVisible(), true);
-    assert.equal(await page.locator('#repository-form .section-heading h2').textContent(), 'Where shall we explore?');
+    assert.equal(await page.locator('#empty').isVisible(), false);
+    assert.equal(await page.locator('#empty-guide, .eyebrow, .study-label, .study-baseline, .panel-method').count(), 0, 'Repeated decorative copy is removed');
+    assert.equal(await page.locator('#repository-form label[for="repository"]').textContent(), 'GitHub repository or organization');
     await page.locator('#repository').fill(repository);
     await page.locator('#scan').click();
     await page.waitForFunction(() => !document.querySelector('#repository-form')!.hasAttribute('aria-busy'));
@@ -77,7 +78,6 @@ for (const variant of ['server', 'portable'] as const) {
     const resultBounds = await page.locator('#results').boundingBox();
     assert.ok(resultBounds && resultBounds.y >= 0 && resultBounds.y < 150, 'A scan brings the results into view');
     assert.equal(await page.locator('#skills button').count(), 2);
-    assert.equal(await page.locator('.intro-copy .eyebrow').textContent(), 'A GARDEN OF AI AGENT SKILLS');
     assert.equal(await page.locator('.intro-copy h1').textContent(), 'Skills are like flowers.');
     assert.equal(await page.locator('.intro-tagline').textContent(), 'They bloom everywhere.');
     assert.deepEqual(await page.locator('.intro-link > span').allTextContents(), ['Discover skills.', 'Find new possibilities. ↗']);
@@ -102,7 +102,8 @@ for (const variant of ['server', 'portable'] as const) {
     assert.equal(await page.locator('#skills button svg').evaluate((el) => el.outerHTML), originalMark);
     assert.equal(await page.locator('#cluster-list .flower-bouquet').first().evaluate((el) => el.outerHTML), bouquet, 'Filtering does not redraw a cluster’s bouquet');
     await page.locator('#filter-skills').fill('');
-    assert.equal(await page.locator('#empty-guide').isVisible(), false, 'First-visit guidance leaves the results uncluttered');
+    assert.equal(await page.locator('#filter-help').evaluate((el) => getComputedStyle(el).position), 'absolute', 'Filter help stays available without visual clutter');
+    assert.match(await page.locator('#ai-help').textContent() ?? '', /Sends names and descriptions to Claude/);
     assert.equal(await page.locator('.library-sidebar #filter-skills').count(), 1, 'Filter stays beside the directory');
     const selected = await page.locator('#skill-name').textContent();
     const clusters = page.locator('#cluster-disclosure');

@@ -8,15 +8,17 @@
 - Display a decorative pink flower beside Skill Atlas in the header, embedded in both views and hidden from assistive technology.
 - Both views have a sparse, static background of soft pastel flowers and leaves, embedded without external assets. Keep it behind the content, hidden from assistive technology, and unable to intercept clicks or keyboard focus; it must not add horizontal scrolling on narrow screens.
 - Serve the page, script, and stylesheet locally. Repository descriptions stay plain text; document Markdown is formatted safely, with raw HTML displayed literally and never executed. Support narrow screens and keyboard navigation.
-- Present the interface as a field guide: numbered Discover, Gather, and Get to know sections,
-  with embedded decorative source, connection, and reading illustrations hidden from assistive
-  technology. Keep guidance legible and section surfaces opaque over the floral background.
+- Present a minimal botanical interface with clear headings and generous spacing. Remove
+  numbered eyebrows, specimen labels, repeated panel slogans, first-visit orientation cards,
+  redundant section captions, and nested decorative frames. Keep guidance legible and reading
+  surfaces opaque over the floral background. Show filter guidance to assistive technology;
+  keep the visible filter label. Keep token/privacy, AI data-transfer, loading, and error guidance.
   The introductory headline and description explain the purpose: discover agent skills across
   GitHub repositories, find inspiration, and reuse skills in your own work.
 - The English botanical concept is the large hero heading “Skills are like flowers.”,
   followed by the smaller line “They bloom everywhere.” and a prominent bold two-line link:
   “Discover skills.” / “Find new possibilities.”, which moves to the repository form.
-  The eyebrow identifies AI agent skills and the description explains GitHub skill discovery
+  A single short description explains AI agent skills, GitHub discovery,
   and reuse. Both the heading and invitation stay large on mobile; the bloom line is smaller
   than both. Show a self-contained botanical specimen illustration on desktop.
 - Give every skill a decorative flower derived deterministically from its stable skill ID.
@@ -43,7 +45,9 @@
 - In the portable view, put AI helper setup in a separate disclosure, initially collapsed.
   Opening or closing it preserves address and code; explain the optional data transfer beside
   the AI action. Keep the GitHub token field always visible. Keep test-data links visually
-  separate from skills and remove first-visit orientation steps after starting a scan.
+  separate from skills. Initially show only the hero and scan form; the empty-results panel
+  appears only after an actual scan finds no skills. Avoid repeating successful scan status
+  visually beside the result heading, while preserving status for assistive technology.
 - Use decorative icons for What it does, Details, When to use, and Compatibility & cautions
   without altering heading text or original description wording. Full instructions remain
   an accessible disclosure. All sections fit viewports down to 320 CSS pixels.

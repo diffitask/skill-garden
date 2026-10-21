@@ -406,7 +406,6 @@ form.addEventListener('submit', async (event) => {
   tokenInput.disabled = true;
   results.hidden = true;
   empty.hidden = true;
-  document.querySelector('#empty-guide').hidden = true;
   warnings.hidden = true;
   warnings.textContent = '';
   for (const selector of ['#repo-name', '#count', '#skill-name', '#skill-repository', '#description', '#path', '#content']) {
