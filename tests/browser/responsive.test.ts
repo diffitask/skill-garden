@@ -53,7 +53,11 @@ for (const variant of ['server', 'portable'] as const) {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto(variant === 'server'
       ? `http://127.0.0.1:${(server.address() as AddressInfo).port}`
-      : new URL('../../skill-atlas.html', import.meta.url).href);
+      : new URL('../../skill-garden.html', import.meta.url).href);
+    assert.equal(await page.title(), 'Skill Garden · Skills are like flowers');
+    assert.equal(await page.locator('.brand span').textContent(), 'Skill Garden');
+    assert.equal(await page.locator('footer > span').textContent(), 'Skill Garden');
+    assert.equal(await page.locator('footer a').getAttribute('href'), 'https://github.com/diffitask/skill-garden');
     const flowers = page.locator('.background-flowers');
     assert.equal(await flowers.getAttribute('aria-hidden'), 'true');
     assert.equal(await flowers.getAttribute('focusable'), 'false');

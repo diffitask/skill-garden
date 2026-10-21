@@ -31,7 +31,7 @@ for (const variant of ['server', 'portable'] as const) {
     const page = await context.newPage();
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(variant === 'server' ? `http://127.0.0.1:${(server.address() as AddressInfo).port}`
-      : new URL('../../skill-atlas.html', import.meta.url).href);
+      : new URL('../../skill-garden.html', import.meta.url).href);
     await page.locator('#repository').fill(documentRepository);
     await page.locator('#scan').click();
     await page.waitForFunction(() => !document.querySelector('#repository-form')!.hasAttribute('aria-busy'));

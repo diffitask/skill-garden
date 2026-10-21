@@ -142,7 +142,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const port = Number(process.env.PORT ?? 3000);
   const pairingCode = process.env.SKILL_ATLAS_AI_CODE || newPairingCode();
   createWebServer({ pairingCode }).listen(port, '127.0.0.1', () => {
-    console.log(`Skill Atlas: http://127.0.0.1:${port}`);
-    console.log(`AI pairing code for skill-atlas.html: ${pairingCode}`);
+    console.log(`Skill Garden: http://127.0.0.1:${port}`);
+    console.log(`AI pairing code for skill-garden.html: ${pairingCode}`);
   });
 }

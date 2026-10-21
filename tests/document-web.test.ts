@@ -55,7 +55,7 @@ for (const variant of ['server', 'portable'] as const) {
       },
     };
     const dom = variant === 'server' ? await JSDOM.fromURL(base, options)
-      : new JSDOM(await portableHtml(), { ...options, url: 'file:///skill-atlas.html' });
+      : new JSDOM(await portableHtml(), { ...options, url: 'file:///skill-garden.html' });
     t.after(() => dom.window.close());
     if (dom.window.document.readyState !== 'complete') await new Promise((resolve) => dom.window.addEventListener('load', resolve, { once: true }));
     const document = dom.window.document;

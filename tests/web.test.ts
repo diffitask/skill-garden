@@ -99,7 +99,7 @@ test('web view integrates submission, loading, selection, safe text, warnings, e
   };
   assert.equal(element('#empty').hidden, true);
   assert.equal(document.querySelector('.brand svg')!.getAttribute('aria-hidden'), 'true');
-  assert.equal(document.querySelector('.brand')!.textContent, 'Skill Atlas');
+  assert.equal(document.querySelector('.brand')!.textContent, 'Skill Garden');
   await scan('slow');
   assert.equal(element('#skill-name').textContent, 'alpha');
   assert.equal(element('#content').textContent, files.get('skills/alpha/SKILL.md'));

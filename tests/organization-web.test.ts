@@ -23,7 +23,7 @@ for (const variant of ['server', 'portable'] as const) {
       }
       return replay(recording)(url, init);
     };
-    let base = 'file:///skill-atlas.html';
+    let base = 'file:///skill-garden.html';
     if (variant === 'server') {
       const server = createWebServer({ github: { fetch: transport, token: 'server-test-token' } });
       server.listen(0, '127.0.0.1');

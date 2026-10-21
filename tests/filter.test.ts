@@ -156,7 +156,7 @@ for (const variant of ['local', 'portable'] as const) {
       await new Promise((resolve) => dom.window.addEventListener('load', resolve, { once: true }));
     } else {
       dom = new JSDOM(await portableHtml(), {
-        url: 'file:///skill-atlas.html', runScripts: 'dangerously', virtualConsole,
+        url: 'file:///skill-garden.html', runScripts: 'dangerously', virtualConsole,
         beforeParse(window) {
           Object.assign(window, { TextDecoder, TextEncoder });
           window.fetch = (input, init) => github(String(input), init as { headers?: Record<string, string> });

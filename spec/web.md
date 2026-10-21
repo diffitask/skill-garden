@@ -1,11 +1,15 @@
 # Local web view
-- `npm start` serves Skill Atlas at `http://127.0.0.1:3000`; `PORT` overrides the port.
+- Brand both views as Skill Garden in the browser title, header, and footer. The footer links
+  to `https://github.com/diffitask/skill-garden`. The portable download is `skill-garden.html`.
+  The README introduces Skill Garden, links to the portable HTML, and includes actual application
+  screenshots. Add the final promotional video only after the user approves that version.
+- `npm start` serves Skill Garden at `http://127.0.0.1:3000`; `PORT` overrides the port.
 - Enter a GitHub repository URL and submit to scan its default branch using the existing scanner. `GITHUB_TOKEN` stays on the server.
 - Show the repository, skill count, and skills sorted by name with descriptions. Select the first skill initially; selecting another shows its name, description, path, full SKILL.md as a formatted document with its original Markdown available, and a GitHub link pinned to the scanned commit.
 - Reuse file reads from the scan to show contents without fetching each file again. Store nothing on disk.
 - Show progress while loading and prevent duplicate submissions. Clear old results on a new scan.
 - Show an explicit empty state for no skills, scan warnings, and clear errors for invalid URLs, unavailable repositories, or GitHub rate limits. A failed scan can be retried.
-- Display a decorative pink flower beside Skill Atlas in the header, embedded in both views and hidden from assistive technology.
+- Display a decorative pink flower beside Skill Garden in the header, embedded in both views and hidden from assistive technology.
 - Both views have a sparse, static background of soft pastel flowers and leaves, embedded without external assets. Keep it behind the content, hidden from assistive technology, and unable to intercept clicks or keyboard focus; it must not add horizontal scrolling on narrow screens.
 - Serve the page, script, and stylesheet locally. Repository descriptions stay plain text; document Markdown is formatted safely, with raw HTML displayed literally and never executed. Support narrow screens and keyboard navigation.
 - Present a minimal botanical interface with clear headings and generous spacing. Remove
@@ -113,7 +117,7 @@
   time per server; a concurrent request gets 429.
 
 ## Portable page
-- `npm run build:web` produces a self-contained `skill-atlas.html` to open directly in a browser. No server, port forwarding, CDN scripts, or package installation is needed to use the generated file.
+- `npm run build:web` produces a self-contained `skill-garden.html` to open directly in a browser. No server, port forwarding, CDN scripts, or package installation is needed to use the generated file.
 - The portable page scans public GitHub repositories directly using the same scanner, optionally with a GitHub personal access token. An internet connection is required; API failures and rate limits appear in the page.
 - Include styles, scanner, parser, and interaction code in the HTML. It supports skill selection and full original document contents, just like the server view.
 

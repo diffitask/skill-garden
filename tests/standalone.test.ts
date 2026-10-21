@@ -9,7 +9,7 @@ const content = '---\nname: demo\ndescription: A portable skill.\n---\n# Instruc
 
 test('portable HTML opens as a file and scans GitHub without a local server or external assets', async (t) => {
   const html = await portableHtml();
-  assert.equal(await readFile(new URL('../skill-atlas.html', import.meta.url), 'utf8'), html, 'Regenerate the portable page after scanner changes');
+  assert.equal(await readFile(new URL('../skill-garden.html', import.meta.url), 'utf8'), html, 'Regenerate the portable page after scanner changes');
   const requests: string[] = [];
   let mode: 'allowed' | 'limited' | 'token-limited' = 'allowed';
   const authorizations: { url: string; authorization?: string }[] = [];
@@ -29,7 +29,7 @@ test('portable HTML opens as a file and scans GitHub without a local server or e
   const console = new VirtualConsole();
   console.on('jsdomError', (error) => errors.push(error));
   const dom = new JSDOM(html, {
-    url: 'file:///skill-atlas.html', runScripts: 'dangerously', virtualConsole: console,
+    url: 'file:///skill-garden.html', runScripts: 'dangerously', virtualConsole: console,
     beforeParse(window) {
       Object.assign(window, { TextDecoder, TextEncoder });
       window.fetch = async (input, init) => {

@@ -375,7 +375,7 @@ test('portable page: With AI asks the paired local helper and shows its clusters
   const requests: { url: string; headers: Record<string, string> }[] = [];
   const github = recordedGitHub();
   const dom = new JSDOM(await portableHtml(), {
-    url: 'file:///skill-atlas.html', runScripts: 'dangerously',
+    url: 'file:///skill-garden.html', runScripts: 'dangerously',
     beforeParse(window) {
       Object.assign(window, { TextDecoder, TextEncoder });
       window.fetch = (input, init) => {

@@ -23,7 +23,7 @@ export async function portableHtml(): Promise<string> {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const output = resolve(process.argv[2] ?? 'skill-atlas.html');
+  const output = resolve(process.argv[2] ?? 'skill-garden.html');
   await writeFile(output, await portableHtml());
   console.log(`Created ${output}`);
 }
