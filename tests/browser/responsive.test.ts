@@ -45,6 +45,20 @@ for (const variant of ['server', 'portable'] as const) {
     await page.goto(variant === 'server'
       ? `http://127.0.0.1:${(server.address() as AddressInfo).port}`
       : new URL('../../skill-atlas.html', import.meta.url).href);
+    const flowers = page.locator('.background-flowers');
+    assert.equal(await flowers.getAttribute('aria-hidden'), 'true');
+    assert.equal(await flowers.getAttribute('focusable'), 'false');
+    const decoration = await flowers.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { position: style.position, pointerEvents: style.pointerEvents, opacity: Number(style.opacity),
+        zIndex: Number(style.zIndex), animation: style.animationName, flowers: element.querySelectorAll('use').length };
+    });
+    assert.equal(decoration.position, 'fixed');
+    assert.equal(decoration.pointerEvents, 'none');
+    assert.ok(decoration.opacity > 0 && decoration.opacity < .5, 'Flowers stay softly tinted');
+    assert.ok(decoration.zIndex < 0, 'Flowers sit behind the content');
+    assert.equal(decoration.animation, 'none');
+    assert.ok(decoration.flowers > 0, 'Both views embed the floral artwork');
     await page.locator('#repository').fill(repository);
     await page.locator('#scan').click();
     await page.waitForFunction("!document.querySelector('#repository-form').hasAttribute('aria-busy')");

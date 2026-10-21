@@ -6,6 +6,7 @@
 - Show progress while loading and prevent duplicate submissions. Clear old results on a new scan.
 - Show an explicit empty state for no skills, scan warnings, and clear errors for invalid URLs, unavailable repositories, or GitHub rate limits. A failed scan can be retried.
 - Display a decorative pink flower beside Skill Atlas in the header, embedded in both views and hidden from assistive technology.
+- Both views have a sparse, static background of soft pastel flowers and leaves, embedded without external assets. Keep it behind the content, hidden from assistive technology, and unable to intercept clicks or keyboard focus; it must not add horizontal scrolling on narrow screens.
 - Serve the page, script, and stylesheet locally. Repository text is displayed as text, never executable markup. Support narrow screens and keyboard navigation.
 - Both views provide an accessible field labeled Filter skills for current results. Apply
   the word-filter rules in [analysis.md](analysis.md) immediately on input, without rescanning,
