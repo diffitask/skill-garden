@@ -1,4 +1,10 @@
 import { renderSkillDocument, copyMarkdown } from './document.js';
+import { createFlower, createBouquet } from './flowers.js';
+
+const flowerStudy = document.querySelector('#flower-study');
+for (const seed of ['garden-rose', 'garden-lilac', 'garden-gold', 'garden-blue', 'garden-coral']) {
+  flowerStudy.append(createFlower(seed));
+}
 
 const form = document.querySelector('#repository-form');
 const input = document.querySelector('#repository');
@@ -101,6 +107,7 @@ function selectSkill(skill, item) {
   selectedSkill = skill;
   resetDocumentControls();
   document.querySelector('#skill-name').textContent = skill.name;
+  document.querySelector('#skill-flower').replaceChildren(createFlower(skill.id));
   document.querySelector('#skill-repository').textContent = skill.repository;
   renderDescription(skill.description);
   document.querySelector('#full-document').open = false;
@@ -114,6 +121,7 @@ function clearSelection() {
   selectedSkill = null;
   resetDocumentControls();
   documentContent.replaceChildren();
+  document.querySelector('#skill-flower').replaceChildren();
   detail.hidden = true;
   for (const id of ['skill-name', 'skill-repository', 'description', 'path', 'content']) document.getElementById(id).replaceChildren();
   document.querySelector('#source').removeAttribute('href');
@@ -154,7 +162,8 @@ function renderSkills() {
         const item = document.createElement('button');
         item.type = 'button';
         const title = document.createElement('strong');
-        title.textContent = skill.name;
+        title.className = 'skill-title';
+        title.append(createFlower(skill.id), document.createTextNode(skill.name));
         const description = document.createElement('span');
         description.textContent = skill.description || skill.path;
         item.append(title, description);
@@ -210,7 +219,10 @@ function renderClusterCards(container, clustering, byId) {
     const card = document.createElement('section');
     card.className = 'cluster';
     const heading = document.createElement('h5');
-    heading.textContent = cluster.words.join(' · ');
+    const label = document.createElement('span');
+    label.className = 'cluster-label';
+    label.textContent = cluster.words.join(' · ');
+    heading.append(createBouquet(cluster.skills), label);
     const size = document.createElement('span');
     size.className = 'cluster-size';
     size.textContent = `${members.length} ${members.length === 1 ? 'skill' : 'skills'}`;
@@ -220,7 +232,7 @@ function renderClusterCards(container, clustering, byId) {
       const item = document.createElement('li');
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = skill.name;
+      button.append(createFlower(skill.id), document.createTextNode(skill.name));
       if (scanData.organization) button.title = skill.repository;
       button.addEventListener('click', () => {
         const target = skillButtons.get(skill.id);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Skill Atlas · Repository explorer</title>
+  <title>Skill Atlas · Skills, like flowers</title>
   <link rel="stylesheet" href="/style.css">
   <script src="/app.js" defer></script>
 </head>
@@ -42,18 +42,12 @@
   <header><a class="brand" href="/"><svg class="brand-flower" viewBox="0 0 40 48" width="32" height="38" aria-hidden="true" focusable="false"><path d="M20 24v21" fill="none" stroke="#53835a" stroke-width="2.5" stroke-linecap="round"/><path d="M20 38c-8 0-12-5-12-9 7 0 12 3 12 9Z" fill="#8eae76"/><path d="M20 33c7 0 11-4 11-8-6 0-11 3-11 8Z" fill="#6f965c"/><g fill="#e9a9b4"><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(0 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(45 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(90 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(135 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(180 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(225 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(270 20 17)"/><ellipse cx="20" cy="9" rx="4" ry="7" transform="rotate(315 20 17)"/></g><circle cx="20" cy="17" r="5.5" fill="#e8be58"/></svg><span>Skill Atlas</span></a><span class="badge">LOCAL EXPLORER</span></header>
   <main>
     <section class="intro">
-      <div class="intro-copy"><span class="eyebrow">A FIELD GUIDE TO AGENT CAPABILITIES</span><h1>Discover skills.<br><em>Make them your own.</em></h1><p>Explore agent skills across GitHub repositories. Get inspired and reuse them in your work.</p></div>
-      <div class="atlas-drawing" aria-hidden="true">
-        <svg viewBox="0 0 360 230" fill="none" focusable="false">
-          <ellipse cx="180" cy="116" rx="145" ry="93" stroke="currentColor" stroke-dasharray="3 7"/>
-          <path d="m84 61 94 53 104-57M178 114l-96 65m96-65 108 62" stroke="currentColor"/>
-          <g fill="#f8f5ed" stroke="currentColor"><rect x="50" y="35" width="65" height="48" rx="12" transform="rotate(-9 50 35)"/><rect x="253" y="32" width="65" height="48" rx="12" transform="rotate(9 253 32)"/><rect x="47" y="151" width="65" height="48" rx="12" transform="rotate(-6 47 151)"/><rect x="258" y="153" width="65" height="48" rx="12" transform="rotate(8 258 153)"/></g>
-          <g class="drawing-icons" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-source" x="66" y="42" width="27" height="27"/><use href="#icon-target" x="271" y="46" width="27" height="27"/><use href="#icon-notes" x="66" y="159" width="27" height="27"/><use href="#icon-spark" x="276" y="167" width="27" height="27"/></g>
-          <rect x="127" y="80" width="106" height="76" rx="12" fill="#e5ecdf" stroke="currentColor"/>
-          <text x="180" y="113" text-anchor="middle" fill="#315443" font-size="15" font-family="monospace">SKILL.md</text><path d="M151 126h57m-46 8h35" stroke="currentColor" stroke-linecap="round"/>
-          <circle cx="178" cy="18" r="4" fill="#e4bd79"/><circle cx="34" cy="111" r="3" fill="#d7a7b5"/><path d="m327 115 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" fill="#b7a6c9"/>
-        </svg>
-        <span>ONE FILE. A WHOLE NEW CAPABILITY.</span>
+      <div class="intro-copy"><span class="eyebrow">SKILLS, LIKE FLOWERS</span><h1>Many similar.<br><em>Many unique.</em></h1><p>Explore agent skills across GitHub repositories. Find inspiration, discover connections, and reuse what you love.</p><a class="intro-link" href="#repository-form">Explore them <span aria-hidden="true">↗</span></a></div>
+      <div class="botanical-study" aria-hidden="true">
+        <span class="study-label">A FIELD GUIDE TO POSSIBILITIES</span>
+        <div id="flower-study"></div>
+        <div class="study-baseline"><span>01 — 05</span><span>DIFFERENT SKILLS. ROOM TO GROW.</span></div>
+        <p>Find your next possibility.</p>
       </div>
     </section>
     <form id="repository-form">
@@ -76,14 +70,14 @@
     <p id="scan-summary" role="status"></p>
     <div id="warnings" role="status" hidden></div>
     <section id="results" hidden aria-label="Repository skills">
-      <div class="results-heading"><div><span class="eyebrow">YOUR SKILL COLLECTION</span><h2 id="repo-name"></h2></div><div class="results-actions"><a href="#skill-library">Browse skills ↓</a><span id="count" class="badge" role="status" aria-live="polite"></span></div></div>
+      <div class="results-heading"><div><span class="eyebrow">YOUR GARDEN OF SKILLS</span><h2 id="repo-name"></h2></div><div class="results-actions"><a href="#skill-library">Browse skills ↓</a><span id="count" class="badge" role="status" aria-live="polite"></span></div></div>
       <section id="clusters" aria-labelledby="clusters-title">
         <details id="cluster-disclosure" open>
-          <summary class="section-heading"><span class="section-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#icon-network"/></svg></span><span class="section-heading-copy"><span class="eyebrow">02 / CONNECT</span><span id="clusters-title" class="section-title">Skill clusters</span><span class="section-caption">Discover related skills. Select one to read its instructions.</span></span></summary>
+          <summary class="section-heading"><span class="section-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#icon-network"/></svg></span><span class="section-heading-copy"><span class="eyebrow">02 / GATHER</span><span id="clusters-title" class="section-title">Skill clusters</span><span class="section-caption">Think of clusters as bouquets: related skills, gathered together.</span></span></summary>
         <div class="cluster-panels">
           <section class="cluster-panel" aria-labelledby="word-clusters-title">
             <div class="clusters-heading"><h4 id="word-clusters-title">Without AI</h4><span id="cluster-count" class="badge"></span></div>
-            <p class="panel-method">Shared words, useful connections.</p><p class="hint">Groups skills with similar names and descriptions. Adjust similarity to explore broader or closer matches.</p>
+            <p class="panel-method">Similar words. A natural bouquet.</p><p class="hint">Groups skills with similar names and descriptions. Adjust similarity to explore broader or closer matches.</p>
             <div class="cluster-level"><label for="cluster-level">Cluster similarity</label><select id="cluster-level" aria-controls="cluster-list"></select></div>
             <div id="cluster-list"></div>
             <p id="no-clusters" hidden>No skills share enough words to form a cluster.</p>
@@ -91,7 +85,7 @@
           </section>
           <section id="ai-clusters" class="cluster-panel" aria-labelledby="ai-clusters-title">
             <div class="clusters-heading"><h4 id="ai-clusters-title">With AI</h4><span id="ai-cluster-count" class="badge">Claude Haiku 4.5</span></div>
-            <p class="panel-method">A second perspective, by meaning.</p><p id="ai-help" class="hint">Claude Haiku 4.5 groups skills by meaning. Skill names and descriptions are sent to Claude when you choose to cluster.</p>
+            <p class="panel-method">Let meaning bring them together.</p><p id="ai-help" class="hint">Claude Haiku 4.5 groups skills by meaning. Skill names and descriptions are sent to Claude when you choose to cluster.</p>
             <div id="ai-helper" class="ai-helper" hidden>
               <details id="ai-setup"><summary>Connect your local AI helper</summary>
               <p class="hint">This page asks the local AI helper: run <code>npm start</code> in the Skill Atlas repository, with Claude Code installed and logged in, and paste the pairing code it prints. The code stays in this tab and is never saved.</p>
@@ -117,7 +111,7 @@
         </div>
         </details>
       </section>
-      <div id="skill-library" class="section-heading library-heading"><span class="section-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#icon-book"/></svg></span><div><span class="eyebrow">03 / UNDERSTAND</span><h3>Inside the skills</h3><p class="section-caption">Browse the collection. Open a skill to see where it fits.</p></div></div>
+      <div id="skill-library" class="section-heading library-heading"><span class="section-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#icon-book"/></svg></span><div><span class="eyebrow">03 / GET TO KNOW</span><h3>Every skill has its own character.</h3><p class="section-caption">Each skill has a flower. Open one, get inspired, and make it part of your work.</p></div></div>
       <div class="workspace">
         <aside class="library-sidebar" aria-label="Browse skills">
           <div class="sidebar-heading"><h4>Skill directory</h4><span aria-hidden="true">A—Z</span></div>
@@ -127,7 +121,7 @@
         </aside>
         <article id="detail">
           <div class="document-heading">
-            <div><span class="eyebrow">SKILL FIELD NOTES</span><h2 id="skill-name" tabindex="-1"></h2></div>
+            <div class="skill-identity"><span id="skill-flower" aria-hidden="true"></span><div><span class="eyebrow">SKILL FIELD NOTES</span><h2 id="skill-name" tabindex="-1"></h2></div></div>
             <a id="source" target="_blank" rel="noopener noreferrer">View on GitHub ↗</a>
           </div>
           <p id="skill-repository"></p>
@@ -148,7 +142,7 @@
     </section>
     <section id="test-data" aria-label="Test data, not skills"></section>
     <section id="empty" class="empty">
-      <span class="eyebrow">A LITTLE ORIENTATION</span><h2 id="empty-title">Every skill has a story.</h2><p id="empty-message">Start with a repository. Leave with a clearer picture of what your agent can do.</p>
+      <span class="eyebrow">A LITTLE ORIENTATION</span><h2 id="empty-title">A whole garden of possibilities.</h2><p id="empty-message">Some skills feel familiar. Others surprise you. Explore them and find what you want to grow next.</p>
       <div id="empty-guide" class="empty-guide">
         <div><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-source"/></svg><h3>Find the instructions</h3><p>Discover SKILL.md files across a repository or public organization.</p></div>
         <div><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-network"/></svg><h3>Follow the connections</h3><p>Explore related skills through shared words or optional AI clustering.</p></div>
@@ -156,6 +150,6 @@
       </div>
     </section>
   </main>
-  <footer><span>Skill Atlas</span><span>Read the skills. Understand the agent.</span></footer>
+  <footer><span>Skill Atlas · Skills, like flowers.</span><span>Find inspiration. Grow your possibilities.</span></footer>
 </body>
 </html>

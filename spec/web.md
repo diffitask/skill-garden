@@ -8,11 +8,24 @@
 - Display a decorative pink flower beside Skill Atlas in the header, embedded in both views and hidden from assistive technology.
 - Both views have a sparse, static background of soft pastel flowers and leaves, embedded without external assets. Keep it behind the content, hidden from assistive technology, and unable to intercept clicks or keyboard focus; it must not add horizontal scrolling on narrow screens.
 - Serve the page, script, and stylesheet locally. Repository descriptions stay plain text; document Markdown is formatted safely, with raw HTML displayed literally and never executed. Support narrow screens and keyboard navigation.
-- Present the interface as a field guide: numbered Discover, Connect, and Understand sections,
+- Present the interface as a field guide: numbered Discover, Gather, and Get to know sections,
   with embedded decorative source, connection, and reading illustrations hidden from assistive
   technology. Keep guidance legible and section surfaces opaque over the floral background.
   The introductory headline and description explain the purpose: discover agent skills across
   GitHub repositories, find inspiration, and reuse skills in your own work.
+- The English botanical concept is “Skills, like flowers”: the hero says “Many similar.
+  Many unique.” and invites users to “Explore them”, while the description explains GitHub
+  skill discovery and reuse. Show a self-contained botanical specimen illustration on desktop.
+- Give every skill a decorative flower derived deterministically from its stable skill ID.
+  Repeat exactly the same mark beside its directory name, cluster-member name, and reader
+  heading. Marks vary in petal count, shape, and muted color; they never imply inferred skill
+  categories. Do not use source text as SVG markup. Flowers are hidden from assistive technology,
+  unfocusable, static, and never fetch assets or modify original skill names or descriptions.
+- Present clusters as bouquets: show up to three members’ flower marks beside each cluster
+  heading, chosen from the complete sorted membership so filtering does not change the bouquet.
+  Skill marks remain stable after filtering, selection, similarity changes, and rescanning the
+  same source. Clear the reader’s flower when selection is empty. Both views retain keyboard
+  navigation and fit 320px layouts with long skill names and cluster labels.
 - Keep Filter skills next to the skill directory, with a distinct selected item and the reader
   beside it on desktop, stacked on mobile. Provide a Browse skills link that skips the clusters.
   After scanning, scroll to results. Selecting a cluster member focuses its skill heading and

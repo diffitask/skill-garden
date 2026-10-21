@@ -205,7 +205,7 @@ test('local web: With AI beside Without AI clusters the shown skills on request,
   const element = (id: string) => document.querySelector<HTMLElement>(id)!;
   const button = document.querySelector<HTMLButtonElement>('#ai-cluster')!;
   const cards = () => [...document.querySelectorAll('#ai-cluster-list .cluster')].map((card) => ({
-    label: card.querySelector('h5')!.firstChild!.textContent!.trim(),
+    label: card.querySelector('.cluster-label')!.textContent!.trim(),
     skills: [...card.querySelectorAll('button')].map((item) => item.textContent),
   }));
   await scanned(dom);

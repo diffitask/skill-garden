@@ -46,10 +46,18 @@ main { max-width: 1240px; margin: auto; padding: 48px 40px 36px; }
 h1 { font-family: var(--serif); font-size: clamp(42px, 5.2vw, 66px); line-height: 1.06; font-weight: 400; letter-spacing: -2.2px; margin: 18px 0; }
 h1 em { color: #657a56; font-weight: 400; }
 .intro-copy > p { font-size: 15px; max-width: 480px; color: var(--muted); margin: 20px 0 0; }
-.atlas-drawing { color: #94a78a; max-width: 360px; justify-self: center; width: 100%; transform: rotate(-3deg); }
-.atlas-drawing > svg { display: block; width: 100%; }
-.atlas-drawing > span { display: block; text-align: center; font: 9px ui-monospace, monospace; letter-spacing: 2px; color: #798675; margin-top: 8px; }
-.drawing-icons { color: #6c7b60; }
+.intro-link { display: inline-flex; align-items: center; gap: 26px; margin-top: 20px; padding-bottom: 7px; border-bottom: 1px solid #a6b795; font-size: 13px; font-weight: 600; text-decoration: none; }
+.intro-link:hover { color: #79517b; border-color: #b4a1be; }
+.botanical-study { width: 100%; max-width: 400px; justify-self: center; position: relative; padding: 24px 24px 12px; border: 1px solid #d9decf; border-radius: 46% 46% 12px 12px; background: #f4f1e9; transform: rotate(-3deg); }
+.study-label { display: block; text-align: center; font: 8px/1.6 ui-monospace, monospace; letter-spacing: 1.4px; color: #77876b; margin: 12px 0 8px; }
+#flower-study { display: flex; justify-content: center; align-items: flex-end; gap: 0; height: 158px; border-bottom: 1px solid #cbd6bd; padding: 0 5px 0; }
+.skill-flower { display: inline-block; width: 25px; height: 35px; flex: none; vertical-align: middle; pointer-events: none; }
+#flower-study .skill-flower { width: 20%; height: 125px; }
+#flower-study .skill-flower:nth-child(2) { height: 150px; transform: rotate(-7deg); }
+#flower-study .skill-flower:nth-child(3) { height: 138px; }
+#flower-study .skill-flower:nth-child(4) { height: 156px; transform: rotate(7deg); }
+.study-baseline { display: flex; justify-content: space-between; gap: 12px; padding-top: 10px; font: 7px/1.7 ui-monospace, monospace; letter-spacing: .6px; color: #7e8b73; }
+.botanical-study > p { font: italic 19px/1.4 var(--serif); color: #7d886c; text-align: center; margin: 16px 0 5px; }
 #repository-form { padding: 26px 30px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); box-shadow: 0 4px 0 #e8eadd, 0 12px 30px #35472b06; }
 .section-heading { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
 .section-icon { display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid #d7dfce; background: #eef1e6; border-radius: 12px 12px 12px 3px; color: #56734b; flex: none; }
@@ -101,11 +109,18 @@ input::placeholder { color: #7b8778; opacity: 1; }
 .cluster-level select { min-width: 0; max-width: 100%; font-size: 12px; padding: 8px 10px; color: var(--ink); border: 1px solid #ccd6c4; border-radius: 6px; background: var(--paper); }
 #cluster-list, #ai-cluster-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; max-height: 340px; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: thin; }
 .cluster { border: 1px solid #dbe3d2; border-left: 3px solid #a5b792; border-radius: 7px; padding: 14px; background: var(--paper); min-width: 0; }
-.cluster h5 { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 10px; font-size: 12px; line-height: 1.6; margin: 0 0 10px; color: #43623c; overflow-wrap: anywhere; }
+.cluster h5 { display: flex; align-items: center; flex-wrap: wrap; gap: 5px 10px; font-size: 12px; line-height: 1.6; margin: 0 0 10px; color: #43623c; overflow-wrap: anywhere; }
+.cluster-label { flex: 1; min-width: 80px; }
+.flower-bouquet { display: inline-flex; align-items: flex-end; width: 46px; height: 43px; flex: none; padding-left: 3px; }
+.flower-bouquet .skill-flower { width: 24px; height: 40px; margin-left: -5px; }
+.flower-bouquet .skill-flower:first-child { transform: rotate(-15deg); }
+.flower-bouquet .skill-flower:last-child { transform: rotate(15deg); }
+.flower-bouquet .skill-flower:nth-child(2) { height: 45px; }
 .cluster-size { margin-left: auto; font: 10px ui-monospace, monospace; color: #62735a; white-space: nowrap; }
 .cluster ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .cluster li { min-width: 0; max-width: 100%; }
 .cluster button { border: 1px solid #d3dfc9; background: #f0f4e9; color: #35522d; border-radius: 5px; padding: 6px 9px; font-size: 12px; max-width: 100%; overflow-wrap: anywhere; text-align: left; }
+.cluster button .skill-flower { width: 15px; height: 21px; margin-right: 5px; }
 .cluster button:hover { background: #e1ebd6; }
 #no-clusters, #unclustered, #ai-status, #ai-no-clusters, #ai-unclustered { font-size: 12px; line-height: 1.7; color: var(--muted); margin: 12px 0 0; }
 #ai-status:empty, #unclustered:empty, #ai-unclustered:empty { display: none; }
@@ -151,11 +166,17 @@ nav button { display: block; position: relative; width: 100%; text-align: left; 
 nav button:hover { background: #f4f5ed; }
 nav button[aria-current] { background: #edf2e5; border-color: #d2dfc5; box-shadow: inset 3px 0 #789666; }
 nav strong { display: block; font-size: 13px; margin-bottom: 6px; padding-right: 12px; overflow-wrap: anywhere; }
+nav strong.skill-title { display: flex; align-items: center; gap: 8px; }
+nav .skill-title .skill-flower { width: 22px; height: 31px; }
 nav button[aria-current] strong::after { content: '↗'; position: absolute; right: 10px; color: #6e895e; }
 nav span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 11px; line-height: 1.7; color: #66755e; overflow-wrap: anywhere; }
 #detail { min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); padding: 30px; box-shadow: 0 4px 0 #e8eadd; }
 .document-heading { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
 .document-heading > div { min-width: 0; }
+.skill-identity { display: flex; align-items: center; gap: 16px; }
+.skill-identity > div { min-width: 0; }
+#skill-flower { flex: none; }
+#skill-flower .skill-flower { width: 48px; height: 68px; }
 .document-heading h2 { font-family: var(--serif); font-weight: 400; font-size: 34px; letter-spacing: -.7px; line-height: 1.2; margin-top: 10px; overflow-wrap: anywhere; }
 .document-heading a { flex: none; border: 1px solid var(--line); border-radius: 6px; padding: 9px 11px; font-size: 11px; text-decoration: none; background: #fafbf6; }
 #skill-repository { font: 11px/1.7 ui-monospace, monospace; overflow-wrap: anywhere; color: #65745d; margin: 12px 0; }
@@ -243,7 +264,9 @@ body > footer { border-top: 1px solid var(--line); color: #64735d; font: 10px ui
   .intro { grid-template-columns: 1fr; gap: 14px; margin: 0 0 28px; }
   h1 { font-size: clamp(42px, 9vw, 60px); }
   .intro-copy > p { font-size: 14px; }
-  .atlas-drawing { display: none; }
+  .botanical-study { display: none; }
+  .skill-identity { gap: 10px; }
+  #skill-flower .skill-flower { width: 35px; height: 50px; }
   #repository-form { padding: 22px 20px; }
   .section-heading { gap: 12px; }
   .section-icon { width: 40px; height: 40px; border-radius: 10px 10px 10px 3px; }

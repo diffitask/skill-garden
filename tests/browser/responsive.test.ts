@@ -77,6 +77,23 @@ for (const variant of ['server', 'portable'] as const) {
     const resultBounds = await page.locator('#results').boundingBox();
     assert.ok(resultBounds && resultBounds.y >= 0 && resultBounds.y < 150, 'A scan brings the results into view');
     assert.equal(await page.locator('#skills button').count(), 2);
+    assert.equal(await page.locator('.intro-copy .eyebrow').textContent(), 'SKILLS, LIKE FLOWERS');
+    assert.equal(await page.locator('.intro-link').textContent(), 'Explore them ↗');
+    const mark = page.locator('#skills button').first().locator('.skill-flower');
+    const originalMark = await mark.evaluate((el) => el.outerHTML);
+    const otherMark = await page.locator('#skills button').nth(1).locator('.skill-flower').evaluate((el) => el.outerHTML);
+    assert.notEqual(originalMark, otherMark, 'Different skills have distinct botanical marks');
+    assert.equal(await mark.getAttribute('aria-hidden'), 'true');
+    assert.equal(await mark.getAttribute('focusable'), 'false');
+    assert.equal(await page.locator('#skill-flower svg').evaluate((el) => el.outerHTML), originalMark, 'Reader repeats the selected skill’s exact flower');
+    assert.equal(await page.locator('#cluster-list button').first().locator('svg').evaluate((el) => el.outerHTML), originalMark, 'Cluster members repeat directory marks');
+    const bouquet = await page.locator('#cluster-list .flower-bouquet').first().evaluate((el) => el.outerHTML);
+    const firstName = await page.locator('#skills strong').first().textContent();
+    await page.locator('#filter-skills').fill(firstName!);
+    assert.equal(await page.locator('#skills button').count(), 1);
+    assert.equal(await page.locator('#skills button svg').evaluate((el) => el.outerHTML), originalMark);
+    assert.equal(await page.locator('#cluster-list .flower-bouquet').first().evaluate((el) => el.outerHTML), bouquet, 'Filtering does not redraw a cluster’s bouquet');
+    await page.locator('#filter-skills').fill('');
     assert.equal(await page.locator('#empty-guide').isVisible(), false, 'First-visit guidance leaves the results uncluttered');
     assert.equal(await page.locator('.library-sidebar #filter-skills').count(), 1, 'Filter stays beside the directory');
     const selected = await page.locator('#skill-name').textContent();
@@ -90,6 +107,7 @@ for (const variant of ['server', 'portable'] as const) {
     await page.locator('#filter-skills').fill('no-such-skill');
     assert.equal(await page.locator('#no-matches').isVisible(), true);
     assert.equal(await page.locator('#detail').isVisible(), false);
+    assert.equal(await page.locator('#skill-flower svg').count(), 0, 'An empty selection clears its flower');
     await page.locator('#filter-skills').fill('');
     await clusters.locator('> summary').focus();
     await page.keyboard.press('Enter');
@@ -129,12 +147,14 @@ for (const variant of ['server', 'portable'] as const) {
           `${width}px ${level}: selector must stay inside its panel: ${JSON.stringify(layout)}`);
         assert.equal(layout.document, layout.viewport, `${width}px ${level}: page must not scroll horizontally`);
         assert.equal(await page.locator('#skills button').count(), 2, 'Changing level retains the skills');
+        assert.equal(await mark.evaluate((el) => el.outerHTML), originalMark, 'Similarity never changes skill identity');
       }
     }
     await clusters.locator('> summary').click();
     await page.locator('#scan').click();
     await page.waitForFunction(() => !document.querySelector('#repository-form')!.hasAttribute('aria-busy'));
     assert.notEqual(await clusters.getAttribute('open'), null, 'A new scan starts with connections expanded');
+    assert.equal(await mark.evaluate((el) => el.outerHTML), originalMark, 'Rescanning preserves a skill’s flower');
     await page.locator('a[href="#skill-library"]').click();
     const directory = await page.locator('#skill-library').boundingBox();
     assert.ok(directory && directory.y >= 0 && directory.y < 150, 'Browse skills jumps directly to the reader section');
