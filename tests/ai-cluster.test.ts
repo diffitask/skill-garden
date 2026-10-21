@@ -13,6 +13,7 @@ import { AI_MAX_SKILLS, AI_MODEL, AI_SCHEMA, aiClusterSkills, aiPrompt, checkAns
 import { openGitHub } from '../src/core/github.ts';
 import { replay, type Recording } from '../src/core/replay.ts';
 import { createWebServer } from '../src/server.ts';
+import { ORG, organizationFixture } from './organization-fixture.ts';
 
 const skill = (name: string, description = '') => ({ id: `repo:${name}`, name, description });
 const ids = (...names: string[]) => names.map((name) => `repo:${name}`);
@@ -408,3 +409,100 @@ test('portable page: With AI asks the paired local helper and shows its clusters
   assert.equal(element('#ai-status').textContent, 'Claude Haiku 4.5 clustered 4 skills.');
   assert.ok(!document.documentElement.outerHTML.includes('pair-code-123'), 'The code is not written into the page');
 });
+
+for (const variant of ['server', 'portable'] as const) {
+  test(`${variant}: skills shown after an AI request are counted as not sent, never as Claude's verdict`, async (t) => {
+    const prompts: string[] = [];
+    let release: (() => void) | undefined;
+    let answer: unknown = { clusters: [{ label: 'Same skill', skills: ['s1', 's2'] }] };
+    const server = createWebServer({
+      pairingCode: 'pair-code-123',
+      github: { fetch: replay(organizationFixture()) },
+      ask: ({ prompt }) => { prompts.push(prompt); return new Promise((resolve) => { release = () => resolve(answer); }); },
+    });
+    server.listen(0, '127.0.0.1');
+    await once(server, 'listening');
+    t.after(() => server.close());
+    const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    const errors: Error[] = [];
+    const virtualConsole = new VirtualConsole();
+    virtualConsole.on('jsdomError', (error) => errors.push(error));
+    const github = replay(organizationFixture());
+    const options = {
+      runScripts: 'dangerously' as const, virtualConsole,
+      beforeParse(window: JSDOM['window']) {
+        Object.assign(window, { TextDecoder, TextEncoder });
+        window.fetch = variant === 'server'
+          ? (input, init) => fetch(new URL(String(input), base), init)
+          : (input, init) => String(input).startsWith(base)
+            ? fetch(String(input), { ...init, headers: { ...(init?.headers as Record<string, string>), Origin: 'null' } })
+            : github(String(input), init as { headers?: Record<string, string> });
+      },
+    };
+    const dom = variant === 'server'
+      ? await JSDOM.fromURL(base, { ...options, resources: 'usable' })
+      : new JSDOM(await portableHtml(), { ...options, url: 'file:///skill-atlas.html' });
+    t.after(() => dom.window.close());
+    if (variant === 'server') await new Promise((resolve) => dom.window.addEventListener('load', resolve, { once: true }));
+    const document = dom.window.document;
+    const element = (id: string) => document.querySelector<HTMLElement>(id)!;
+    const button = document.querySelector<HTMLButtonElement>('#ai-cluster')!;
+    const type = (selector: string, value: string) => {
+      const field = document.querySelector<HTMLInputElement>(selector)!;
+      field.value = value;
+      field.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    };
+    const form = document.querySelector('form')!;
+    document.querySelector<HTMLInputElement>('#repository')!.value = ORG;
+    form.dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+    await until(() => !form.hasAttribute('aria-busy'));
+    if (variant === 'portable') {
+      type('#ai-helper-url', base);
+      type('#ai-pairing-code', 'pair-code-123');
+    }
+    const cards = () => [...document.querySelectorAll('#ai-cluster-list .cluster')].map((card) => card.querySelectorAll('button').length);
+
+    type('#filter-skills', 'same-name');
+    assert.equal(button.textContent, 'Cluster 2 skills with AI');
+    button.click();
+    await until(() => release !== undefined);
+    assert.match(prompts[0], /^Cluster these 2 skills by topic\./);
+    type('#filter-skills', '');
+    release!();
+    await until(() => !button.hasAttribute('aria-busy'));
+    assert.equal(element('#ai-error').hidden, true);
+    assert.equal(element('#count').textContent, '4 of 4 skills');
+    assert.deepEqual(cards(), [2], 'The two submitted skills are clustered');
+    assert.equal(element('#ai-unclustered').textContent, '', 'Claude left none of the submitted skills out');
+    assert.equal(element('#ai-unsent').textContent, 'Not sent to Claude: 2 skills. Cluster again to include them.');
+    assert.equal(element('#ai-no-clusters').hidden, true);
+    assert.equal(button.textContent, 'Cluster 4 skills again');
+
+    type('#filter-skills', 'elsewhere');
+    assert.equal(element('#count').textContent, '2 of 4 skills');
+    assert.deepEqual(cards(), []);
+    assert.equal(element('#ai-cluster-count').textContent, '0 clusters');
+    assert.equal(element('#ai-no-clusters').hidden, true, 'No conclusion is shown for skills Claude never saw');
+    assert.equal(element('#ai-unclustered').textContent, '');
+    assert.equal(element('#ai-unsent').textContent, 'Not sent to Claude: 2 skills. Cluster again to include them.');
+
+    type('#filter-skills', 'alpha');
+    assert.equal(element('#ai-unsent').textContent, '', 'Every shown skill was sent');
+    assert.deepEqual(cards(), [1]);
+
+    // Clustering again sends every shown skill, so none is left unaccounted for.
+    type('#filter-skills', '');
+    release = undefined;
+    answer = { clusters: [] };
+    button.click();
+    await until(() => release !== undefined);
+    assert.match(prompts[1], /^Cluster these 4 skills by topic\./);
+    release!();
+    await until(() => !button.hasAttribute('aria-busy'));
+    assert.equal(element('#ai-unsent').textContent, '');
+    assert.equal(element('#ai-unclustered').textContent, 'Not in a cluster: 4 skills');
+    type('#filter-skills', 'elsewhere');
+    assert.equal(element('#ai-no-clusters').hidden, false, 'Claude did evaluate these skills this time');
+    assert.deepEqual(errors, []);
+  });
+}

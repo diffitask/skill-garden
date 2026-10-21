@@ -212,13 +212,18 @@ function renderAiClusters(byId) {
     container.replaceChildren();
     document.querySelector('#ai-no-clusters').hidden = true;
     document.querySelector('#ai-unclustered').textContent = '';
+    document.querySelector('#ai-unsent').textContent = '';
     document.querySelector('#ai-cluster-count').textContent = 'Claude Haiku 4.5';
     return;
   }
   const ai = renderClusterCards(container, aiResult, byId);
+  // Skills shown since the request were never sent: count them apart, never as Claude's verdict.
+  const unsent = [...byId.keys()].filter((id) => !aiResult.sent.has(id)).length;
   document.querySelector('#ai-cluster-count').textContent = `${ai.count} ${ai.count === 1 ? 'cluster' : 'clusters'}`;
-  document.querySelector('#ai-no-clusters').hidden = ai.count !== 0;
+  document.querySelector('#ai-no-clusters').hidden = ai.count !== 0 || unsent === byId.size;
   document.querySelector('#ai-unclustered').textContent = notClustered(ai.alone);
+  document.querySelector('#ai-unsent').textContent = unsent
+    ? `Not sent to Claude: ${unsent} ${unsent === 1 ? 'skill' : 'skills'}. Cluster again to include ${unsent === 1 ? 'it' : 'them'}.` : '';
 }
 
 function resetAiClusters() {
@@ -254,7 +259,7 @@ aiButton.addEventListener('click', async () => {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'AI clustering failed.');
     if (request !== aiRequest) return;
-    aiResult = data;
+    aiResult = { ...data, sent: new Set(skills.map((skill) => skill.id)) };
     aiStatus.textContent = `Claude Haiku 4.5 clustered ${skills.length} skills.`;
   } catch (error) {
     if (request !== aiRequest) return;
