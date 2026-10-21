@@ -9,6 +9,23 @@ const list = document.querySelector('#skills');
 const errorPanel = document.querySelector('#scan-error');
 const tokenInput = document.querySelector('#github-token');
 const addToken = document.querySelector('#add-token');
+const filterInput = document.querySelector('#filter-skills');
+const detail = document.querySelector('#detail');
+let scanData = null;
+let selectedSkill = null;
+
+filterInput.addEventListener('input', () => { if (scanData) renderSkills(); });
+list.addEventListener('keydown', (event) => {
+  const items = [...list.querySelectorAll('button')];
+  const index = items.indexOf(event.target);
+  if (index < 0) return;
+  const next = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: items.length - 1 }[event.key];
+  if (next === undefined) return;
+  event.preventDefault();
+  const item = items[Math.max(0, Math.min(next, items.length - 1))];
+  item.focus();
+  item.click();
+});
 
 document.querySelector('#retry').addEventListener('click', () => form.requestSubmit());
 addToken.addEventListener('click', () => {
@@ -18,6 +35,9 @@ addToken.addEventListener('click', () => {
 function selectSkill(skill, item) {
   for (const sibling of list.querySelectorAll('button')) sibling.removeAttribute('aria-current');
   item.setAttribute('aria-current', 'true');
+  detail.hidden = false;
+  if (selectedSkill === skill) return;
+  selectedSkill = skill;
   document.querySelector('#skill-name').textContent = skill.name;
   document.querySelector('#skill-repository').textContent = skill.repository;
   renderDescription(skill.description);
@@ -25,6 +45,94 @@ function selectSkill(skill, item) {
   document.querySelector('#path').textContent = skill.path;
   document.querySelector('#content').textContent = skill.content;
   document.querySelector('#source').href = skill.link;
+}
+
+function clearSelection() {
+  selectedSkill = null;
+  detail.hidden = true;
+  for (const id of ['skill-name', 'skill-repository', 'description', 'path', 'content']) document.getElementById(id).replaceChildren();
+  document.querySelector('#source').removeAttribute('href');
+  document.querySelector('#full-document').open = false;
+}
+
+function renderSkills() {
+  // Same literal, per-field matching as core/filter.ts; never search paths or contents.
+  const terms = filterInput.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const matches = (skill) => {
+    const name = skill.name.toLowerCase();
+    const description = (skill.description ?? '').toLowerCase();
+    return terms.every((term) => name.includes(term) || description.includes(term));
+  };
+  const organization = scanData.organization;
+  const total = scanData.skills.length;
+  const shown = [];
+  list.replaceChildren();
+  for (const repo of organization ? scanData.repositories : [scanData]) {
+    const repoSkills = repo.skills.filter(matches);
+    if (organization && (repoSkills.length || !terms.length)) {
+      const heading = document.createElement('h3');
+      heading.textContent = `${repo.repository.id} · ${repoSkills.length} skills`;
+      list.append(heading);
+    }
+    const groups = organization ? [
+      ["In agents' folders", repoSkills.filter((skill) => skill.inAgentFolder)],
+      ['Elsewhere', repoSkills.filter((skill) => !skill.inAgentFolder)],
+    ] : [['', repoSkills]];
+    for (const [group, skills] of groups) {
+      if (group && skills.length) {
+        const heading = document.createElement('h4');
+        heading.textContent = `${group} · ${skills.length} ${skills.length === 1 ? 'skill' : 'skills'}`;
+        list.append(heading);
+      }
+      for (const skill of skills) {
+        const item = document.createElement('button');
+        item.type = 'button';
+        const title = document.createElement('strong');
+        title.textContent = skill.name;
+        const description = document.createElement('span');
+        description.textContent = skill.description || skill.path;
+        item.append(title, description);
+        if (organization) {
+          const source = document.createElement('span');
+          source.textContent = skill.repository;
+          item.append(source);
+        }
+        if (skill.copies.length) {
+          const copies = document.createElement('span');
+          copies.textContent = `also in ${skill.copies.join(', ')}`;
+          item.append(copies);
+        }
+        item.addEventListener('click', () => selectSkill(skill, item));
+        list.append(item);
+        shown.push(skill);
+      }
+    }
+  }
+  document.querySelector('#count').textContent = `${shown.length} of ${total} ${total === 1 ? 'skill' : 'skills'}`;
+  document.querySelector('#no-matches').hidden = shown.length !== 0;
+  const selectedIndex = Math.max(0, shown.indexOf(selectedSkill));
+  if (shown.length) selectSkill(shown[selectedIndex], list.querySelectorAll('button')[selectedIndex]);
+  else clearSelection();
+}
+
+function renderTestData(repositories) {
+  const tests = document.querySelector('#test-data');
+  for (const repo of repositories) {
+    if (!repo.testDataLinks?.length) continue;
+    const heading = document.createElement('h3');
+    heading.textContent = `${repo.repository.id} · Test data, not skills · ${repo.testDataLinks.length} files`;
+    tests.append(heading);
+    for (const file of repo.testDataLinks) {
+      const paragraph = document.createElement('p');
+      const link = document.createElement('a');
+      link.href = file.link;
+      link.textContent = file.path;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      paragraph.append(link);
+      tests.append(paragraph);
+    }
+  }
 }
 
 form.addEventListener('submit', async (event) => {
@@ -45,6 +153,9 @@ form.addEventListener('submit', async (event) => {
   }
   document.querySelector('#source').removeAttribute('href');
   list.replaceChildren();
+  scanData = null;
+  filterInput.value = '';
+  clearSelection();
   document.querySelector('#scan-summary').textContent = '';
   document.querySelector('#test-data').replaceChildren();
   try {
@@ -52,7 +163,6 @@ form.addEventListener('submit', async (event) => {
     const organization = data.organization;
     const name = organization ? organization.name : data.repository.id;
     document.querySelector('#repo-name').textContent = name;
-    document.querySelector('#count').textContent = `${data.skills.length} ${data.skills.length === 1 ? 'skill' : 'skills'}`;
     warnings.textContent = data.warnings.map(formatFailure).join('\n');
     warnings.hidden = data.warnings.length === 0;
     if (organization) {
@@ -60,62 +170,7 @@ form.addEventListener('submit', async (event) => {
       document.querySelector('#scan-summary').textContent = `${name} · ${data.skills.length} skills · Repositories: ${c.discovered} discovered, ${c.scanned} successfully scanned, ${c.failed} failed, ${c.skipped} skipped`;
       status.textContent = data.partial ? `Partial results for ${name}. See repository warnings below.` : `Scanned organization ${name}.`;
     } else status.textContent = `Scanned ${name} at commit ${data.repository.commit.slice(0, 7)}.`;
-    const repositories = organization ? data.repositories : [data];
-    const tests = document.querySelector('#test-data');
-    for (const repo of repositories) {
-      if (organization) {
-        const heading = document.createElement('h3');
-        heading.textContent = `${repo.repository.id} · ${repo.skills.length} skills`;
-        list.append(heading);
-      }
-      const groups = organization ? [
-        ["In agents' folders", repo.skills.filter((skill) => skill.inAgentFolder)],
-        ['Elsewhere', repo.skills.filter((skill) => !skill.inAgentFolder)],
-      ] : [['', repo.skills]];
-      for (const [group, skills] of groups) {
-        if (group && skills.length) {
-          const heading = document.createElement('h4');
-          heading.textContent = `${group} · ${skills.length} ${skills.length === 1 ? 'skill' : 'skills'}`;
-          list.append(heading);
-        }
-        for (const skill of skills) {
-          const item = document.createElement('button');
-          item.type = 'button';
-          const title = document.createElement('strong');
-          title.textContent = skill.name;
-          const description = document.createElement('span');
-          description.textContent = skill.description || skill.path;
-          item.append(title, description);
-          if (organization) {
-            const source = document.createElement('span');
-            source.textContent = skill.repository;
-            item.append(source);
-          }
-          if (skill.copies.length) {
-            const copies = document.createElement('span');
-            copies.textContent = `also in ${skill.copies.join(', ')}`;
-            item.append(copies);
-          }
-          item.addEventListener('click', () => selectSkill(skill, item));
-          list.append(item);
-        }
-      }
-      if (repo.testDataLinks?.length) {
-        const heading = document.createElement('h3');
-        heading.textContent = `${repo.repository.id} · Test data, not skills · ${repo.testDataLinks.length} files`;
-        tests.append(heading);
-        for (const file of repo.testDataLinks) {
-          const paragraph = document.createElement('p');
-          const link = document.createElement('a');
-          link.href = file.link;
-          link.textContent = file.path;
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          paragraph.append(link);
-          tests.append(paragraph);
-        }
-      }
-    }
+    renderTestData(organization ? data.repositories : [data]);
     if (!data.skills.length) {
       empty.hidden = false;
       document.querySelector('#empty-title').textContent = data.partial ? 'No skills available from completed scans.' : 'No skills found.';
@@ -125,9 +180,9 @@ form.addEventListener('submit', async (event) => {
         : 'This repository has no SKILL.md files. Try another repository.';
       return;
     }
+    scanData = data;
+    renderSkills();
     results.hidden = false;
-    const first = list.querySelector('button');
-    first.click();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to scan the repository.';
     const limited = /rate limit/i.test(message);

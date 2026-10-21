@@ -12,7 +12,7 @@ import { openDirectory } from '../src/local.ts';
 import { CLI } from './helpers.ts';
 import { API, ORG, LIST, entry, organizationFixture } from './organization-fixture.ts';
 
-async function command(recording: Recording, input = ORG, token?: string) {
+async function command(recording: Recording, input = ORG, token?: string, extra: string[] = []) {
   const requests: { url: string; authorization?: string }[] = [];
   const transport = replay(recording);
   const github: GitHubOptions = { token, fetch: async (url, init) => {
@@ -20,7 +20,7 @@ async function command(recording: Recording, input = ORG, token?: string) {
     return transport(url, init);
   } };
   const stdout: string[] = [], stderr: string[] = [];
-  const code = await run(['scan', input], { github,
+  const code = await run(['scan', input, ...extra], { github,
     open: (url) => parseGitHubUrl(url) ? openGitHub(url, github) : openDirectory(url),
     print: (line) => stdout.push(line), error: (line) => stderr.push(line),
   });
@@ -49,6 +49,25 @@ test('organization CLI paginates public repositories, includes forks/archives, i
     assert.ok(result.requests.filter(({ url }) => url.startsWith(API)).every(({ authorization }) => authorization === (token ? `Bearer ${token}` : undefined)));
     assert.ok(result.requests.filter(({ url }) => url.startsWith('https://raw.')).every(({ authorization }) => !authorization));
   }
+});
+
+test('organization CLI filter counts matching skills per repository and keeps test data, warnings, and partial status', async () => {
+  const matching = await command(organizationFixture(), ORG, undefined, ['--filter', 'ZEBRA testing']);
+  assert.equal(matching.code, 1);
+  assert.match(matching.stdout, /^Example · 1 skill · PARTIAL RESULTS/);
+  assert.match(matching.stdout, /4 discovered, 2 successfully scanned, 1 failed, 1 skipped/);
+  assert.match(matching.stdout, /^Example\/alpha · 0 skills$/m);
+  assert.match(matching.stdout, /^Example\/zebra · 1 skill$/m);
+  assert.equal(matching.stdout.match(/^same-name — /gm)?.length, 1);
+  assert.doesNotMatch(matching.stdout, /aaa-elsewhere/);
+  assert.equal(matching.stdout.match(/Test data, not skills · 1 file/g)?.length, 2);
+  assert.match(matching.stderr, /Example\/failed: Repository not found/);
+  assert.doesNotMatch(matching.stdout, /No skills match your filter/);
+  const none = await command(organizationFixture(), ORG, undefined, ['--filter', 'definitely-no-such-skill']);
+  assert.match(none.stdout, /^Example · 0 skills · PARTIAL RESULTS/);
+  assert.equal(none.stdout.match(/No skills match your filter/g)?.length, 1);
+  const blank = await command(organizationFixture(), ORG, undefined, ['--filter', '   ']);
+  assert.equal(blank.stdout, (await command(organizationFixture())).stdout);
 });
 
 test('organization scan preserves distinct IDs and skill order across repositories', async () => {

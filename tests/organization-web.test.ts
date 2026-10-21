@@ -101,6 +101,34 @@ for (const variant of ['server', 'portable'] as const) {
     assert.ok(!requests.some(({ url }) => url.includes(expectedToken)));
     if (variant === 'server') assert.ok(!dom.serialize().includes('server-test-token'));
 
+    const filter = document.querySelector<HTMLInputElement>('#filter-skills')!;
+    const applyFilter = (value: string) => { filter.value = value; filter.dispatchEvent(new dom.window.Event('input')); };
+    const requestsBeforeFilter = requests.length;
+    applyFilter('ZEBRA testing');
+    assert.equal(el('#count').textContent, '1 of 4 skills');
+    assert.deepEqual([...document.querySelectorAll('#skills h3')].map((h) => h.textContent), ['Example/zebra · 1 skills']);
+    assert.deepEqual([...document.querySelectorAll('#skills h4')].map((h) => h.textContent), ["In agents' folders · 1 skill"]);
+    assert.equal(el('#skill-repository').textContent, 'Example/zebra', 'The selected match stays selected');
+    assert.equal(document.querySelectorAll('#test-data a').length, 2, 'Test data is not filtered');
+    assert.match(el('#scan-summary').textContent!, /Example · 4 skills/);
+    applyFilter('elsewhere');
+    assert.equal(el('#count').textContent, '2 of 4 skills');
+    assert.deepEqual([...document.querySelectorAll('#skills button strong')].map((s) => s.textContent), ['aaa-elsewhere', 'aaa-elsewhere']);
+    assert.equal(el('#skill-repository').textContent, 'Example/alpha', 'The first match is selected');
+    const buttons = [...document.querySelectorAll<HTMLButtonElement>('#skills button')];
+    buttons[0].dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    assert.equal(buttons[1].getAttribute('aria-current'), 'true', 'Arrow keys skip repository headings');
+    applyFilter('definitely-no-such-skill');
+    assert.equal(el('#no-matches').hidden, false);
+    assert.equal(el('#detail').hidden, true);
+    assert.equal(el('#skill-repository').textContent, '');
+    assert.equal(document.querySelectorAll('#skills h3, #skills button').length, 0);
+    applyFilter('');
+    assert.equal(el('#count').textContent, '4 of 4 skills');
+    assert.equal(document.querySelectorAll('#skills h3').length, 2);
+    assert.equal(el('#skill-name').textContent, 'same-name');
+    assert.equal(requests.length, requestsBeforeFilter, 'Filtering makes no requests');
+
     recording['https://raw.githubusercontent.com/Example/zebra/zebra-commit/.agents/skills/shared/SKILL.md'] = {
       status: 200, body: '---\nname: aliases\na: &a [x,x,x,x,x,x,x,x,x,x]\nb: &b [*a,*a,*a,*a,*a,*a,*a,*a,*a,*a]\nc: [*b,*b,*b,*b,*b,*b,*b,*b,*b,*b]\n---\n# Original document',
     };
