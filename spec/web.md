@@ -114,3 +114,5 @@
 - While the design preview remains on a separate branch, label its screenshots and link its
   portable HTML to the saved commit. Keep local setup and the main-branch portable filename
   accurate for the current Skill Atlas interface.
+- Label illustrative AI-clustering screenshots as examples; show both word and AI result
+  panels together without implying a live model run.

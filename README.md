@@ -6,7 +6,7 @@
 
 Discover, read, and reuse AI agent skills from GitHub repositories and organizations.
 
-**[Get the HTML app](https://github.com/diffitask/skill-garden/blob/78036150a730c917bca671cb40b0a481b16c04d4/skill-garden.html)** · **[Try it locally](#try-it-locally)** · **[GitHub](https://github.com/diffitask/skill-garden)**
+**[Get the HTML app](https://github.com/diffitask/skill-garden/blob/79619150f89d322ab38164c2540b25c233d281e9/skill-garden.html)** · **[Try it locally](#try-it-locally)** · **[GitHub](https://github.com/diffitask/skill-garden)**
 
 No watering required.
 
@@ -27,19 +27,21 @@ Paste a GitHub repository or organization URL to discover its skills. Browse nam
 - **Discover** skills and search their names and descriptions.
 - **Find connections** with shared-word clusters or optional AI grouping by meaning.
 - **Read clearly** with a skill summary and the full original instructions.
-- **Reuse what works** by taking useful instructions into your own agent workflows. The design preview adds formatted Markdown and a Copy skill button.
+- **Reuse what works** by taking useful instructions into your own agent workflows.
 
-![Related skills grouped into separate Without AI and With AI panels](docs/screenshots/clusters.png)
+![Word clusters and an example AI clustering result shown side by side](docs/screenshots/clusters.png)
+
+*The AI panel shows an illustrative response rendered by the application.*
 
 ## Your next idea might already be blooming.
 
-Select a skill to read its description and original `SKILL.md`, with a link pinned to the scanned GitHub commit. The preview shown below includes a formatted document reader and one-click copying of the original Markdown.
+Select a skill to read its description and original `SKILL.md`, with a link pinned to the scanned GitHub commit. The preview shown below includes a formatted document reader.
 
 ![An IntelliJ skill and its full SKILL.md shown as a readable document](docs/screenshots/skill-document.png)
 
 ## Try it — one HTML file
 
-1. Open **[skill-garden.html](https://github.com/diffitask/skill-garden/blob/78036150a730c917bca671cb40b0a481b16c04d4/skill-garden.html)** in this repository and choose **Download raw file**.
+1. Open **[skill-garden.html](https://github.com/diffitask/skill-garden/blob/79619150f89d322ab38164c2540b25c233d281e9/skill-garden.html)** in this repository and choose **Download raw file**.
 2. Open the downloaded file in your browser.
 3. Enter a GitHub repository or organization URL and choose **Explore skills**.
 
