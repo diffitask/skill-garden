@@ -183,7 +183,35 @@ const aiStatus = document.querySelector('#ai-status');
 const aiError = document.querySelector('#ai-error');
 const aiHelperUrl = document.querySelector('#ai-helper-url');
 const aiPairingCode = document.querySelector('#ai-pairing-code');
+const aiProgress = document.querySelector('#ai-progress');
+const aiElapsed = document.querySelector('#ai-elapsed');
+const aiProgressNote = document.querySelector('#ai-progress-note');
+let aiProgressTimer = null;
 for (const field of [aiHelperUrl, aiPairingCode]) field.addEventListener('input', () => { if (scanData) renderSkills(); });
+
+function stopAiProgress() {
+  clearInterval(aiProgressTimer);
+  aiProgressTimer = null;
+  aiProgress.hidden = true;
+  aiElapsed.hidden = true;
+}
+
+function startAiProgress() {
+  stopAiProgress();
+  const startedAt = Date.now();
+  aiProgress.hidden = false;
+  aiElapsed.hidden = false;
+  const update = () => {
+    const seconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+    aiElapsed.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')} elapsed`;
+    const note = seconds >= 30
+      ? 'Still waiting for AI. Remaining time is unavailable; you can keep browsing.'
+      : 'The full set is analyzed together; remaining time is unavailable.';
+    if (aiProgressNote.textContent !== note) aiProgressNote.textContent = note;
+  };
+  update();
+  aiProgressTimer = setInterval(update, 1000);
+}
 
 /** The portable page reaches `claude -p` through a local server it is paired with. */
 function aiEndpoint() {
@@ -203,7 +231,7 @@ function renderAiClusters(byId) {
   const busy = aiButton.hasAttribute('aria-busy');
   const unpaired = portable && !aiPairingCode.value.trim();
   aiButton.disabled = unpaired || busy || byId.size < 2;
-  aiButton.textContent = aiResult ? `Cluster ${byId.size} ${byId.size === 1 ? 'skill' : 'skills'} again` : `Cluster ${byId.size} ${byId.size === 1 ? 'skill' : 'skills'} with AI`;
+  aiButton.textContent = busy ? 'Clustering…' : aiResult ? `Cluster ${byId.size} ${byId.size === 1 ? 'skill' : 'skills'} again` : `Cluster ${byId.size} ${byId.size === 1 ? 'skill' : 'skills'} with AI`;
   if (!busy && !aiResult && aiError.hidden) {
     aiStatus.textContent = byId.size < 2 ? 'AI clustering needs at least two shown skills.'
       : unpaired ? 'Paste the pairing code from npm start to cluster with AI.' : '';
@@ -224,6 +252,7 @@ function renderAiClusters(byId) {
 
 function resetAiClusters() {
   aiRequest++;
+  stopAiProgress();
   aiResult = null;
   aiButton.removeAttribute('aria-busy');
   aiStatus.textContent = '';
@@ -238,7 +267,8 @@ aiButton.addEventListener('click', async () => {
   const request = ++aiRequest;
   aiButton.setAttribute('aria-busy', 'true');
   aiError.hidden = true;
-  aiStatus.textContent = `Asking Claude Haiku 4.5 to cluster ${skills.length} skills…`;
+  aiStatus.textContent = `Clustering ${skills.length} skills…`;
+  startAiProgress();
   renderSkills();
   try {
     const endpoint = aiEndpoint();
@@ -264,6 +294,7 @@ aiButton.addEventListener('click', async () => {
     aiStatus.textContent = 'AI clustering failed. See the error below.';
   } finally {
     if (request === aiRequest) {
+      stopAiProgress();
       aiButton.removeAttribute('aria-busy');
       if (scanData) renderSkills();
     }

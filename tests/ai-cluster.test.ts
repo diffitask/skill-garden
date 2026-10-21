@@ -219,6 +219,8 @@ test('local web: With AI beside Without AI clusters the shown skills on request,
   assert.equal(prompts.length, 0, 'Nothing is sent to Claude before the button is pressed');
 
   let release!: () => void;
+  let progressTime = 0;
+  t.mock.method(dom.window.Date, 'now', () => progressTime);
   answers.push(() => new Promise((resolve) => { release = () => resolve({ clusters: [
     { label: 'Office <i>files</i>', skills: ['s1', 's2', 's4'] }, { label: 'Lonely', skills: ['s3'] },
   ] }); }));
@@ -226,7 +228,22 @@ test('local web: With AI beside Without AI clusters the shown skills on request,
   await until(() => prompts.length === 1);
   assert.equal(button.disabled, true);
   assert.equal(button.getAttribute('aria-busy'), 'true');
-  assert.match(element('#ai-status').textContent!, /Asking Claude Haiku 4\.5 to cluster 4 skills/);
+  assert.equal(button.textContent, 'Clustering…');
+  assert.equal(element('#ai-status').textContent, 'Clustering 4 skills…');
+  assert.equal(element('#ai-progress').hidden, false);
+  assert.equal(element('#ai-elapsed').textContent, '0:00 elapsed');
+  assert.equal(element('#ai-elapsed').getAttribute('aria-live'), 'off');
+  assert.equal(element('#ai-progress .ai-progress-track').hasAttribute('aria-valuenow'), false);
+  progressTime = 31000;
+  await until(() => element('#ai-elapsed').textContent === '0:31 elapsed');
+  assert.match(element('#ai-progress-note').textContent!, /Still waiting for AI.*keep browsing/);
+  const pendingFilter = document.querySelector<HTMLInputElement>('#filter-skills')!;
+  pendingFilter.value = 'edits';
+  pendingFilter.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+  assert.equal(element('#ai-status').textContent, 'Clustering 4 skills…', 'The request count stays fixed while filtering');
+  assert.equal(element('#ai-elapsed').textContent, '0:31 elapsed', 'Filtering does not restart the timer');
+  pendingFilter.value = '';
+  pendingFilter.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   button.click();
   release();
   await until(() => !button.hasAttribute('aria-busy'));
@@ -239,6 +256,8 @@ test('local web: With AI beside Without AI clusters the shown skills on request,
   assert.equal(element('#ai-unclustered').textContent, 'Not in a cluster: 1 skill');
   assert.equal(element('#ai-status').textContent, 'Claude Haiku 4.5 clustered 4 skills.');
   assert.equal(button.textContent, 'Cluster 4 skills again');
+  assert.equal(element('#ai-progress').hidden, true);
+  assert.equal(element('#ai-elapsed').hidden, true);
 
   [...document.querySelectorAll<HTMLButtonElement>('#ai-cluster-list button')].find((item) => item.textContent === 'xlsx')!.click();
   assert.equal(element('#skill-name').textContent, 'xlsx');
@@ -256,6 +275,8 @@ test('local web: With AI beside Without AI clusters the shown skills on request,
   assert.equal(element('#ai-error').textContent, 'Claude could not cluster the skills: Not logged in · Please run /login');
   assert.equal(element('#ai-status').textContent, 'AI clustering failed. See the error below.');
   assert.equal(button.disabled, false, 'A failure can be retried');
+  assert.equal(element('#ai-progress').hidden, true);
+  assert.equal(element('#ai-elapsed').hidden, true);
   answers.push(async () => ({ clusters: [] }));
   button.click();
   await until(() => element('#ai-error').hidden && !button.hasAttribute('aria-busy'));
@@ -266,12 +287,16 @@ test('local web: With AI beside Without AI clusters the shown skills on request,
   answers.push(() => new Promise((resolve) => { late = () => resolve({ clusters: [{ label: 'Late', skills: ['s1', 's2'] }] }); }));
   button.click();
   await until(() => prompts.length === 4);
+  assert.equal(element('#ai-elapsed').textContent, '0:00 elapsed', 'A retry starts a new timer');
+  assert.equal(element('#ai-progress').hidden, false);
   await scanned(dom);
+  assert.equal(element('#ai-progress').hidden, true, 'A new scan stops the indicator');
   late();
   await new Promise((resolve) => setTimeout(resolve, 50));
   assert.deepEqual(cards(), [], 'A new scan discards AI clusters and ignores a late answer');
   assert.equal(button.textContent, 'Cluster 4 skills with AI');
   assert.equal(element('#ai-error').hidden, true);
+  assert.equal(element('#ai-elapsed').hidden, true);
   assert.deepEqual(errors, []);
 });
 

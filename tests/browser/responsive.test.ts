@@ -26,7 +26,16 @@ type Layout = { viewport: number; document: number; panelLeft: number; panelRigh
 
 for (const variant of ['server', 'portable'] as const) {
   test(`${variant} field guide disclosures, reader and cluster controls work from mobile to desktop`, { timeout: 20000 }, async (t) => {
-    const server = createWebServer({ github: { fetch: replay(recording) } });
+    let finishAi!: () => void;
+    t.after(() => finishAi?.());
+    let startAi!: () => void;
+    const aiStarted = new Promise<void>((started) => { startAi = started; });
+    const server = createWebServer({ github: { fetch: replay(recording) }, pairingCode: 'browser-pair-code',
+      ask: async () => new Promise((resolve) => {
+        finishAi = () => resolve({ clusters: [{ label: 'Build tools', skills: ['s1', 's2'] }] });
+        startAi();
+      }),
+    });
     server.listen(0, '127.0.0.1');
     await once(server, 'listening');
     t.after(() => server.close());
@@ -129,5 +138,35 @@ for (const variant of ['server', 'portable'] as const) {
     await page.locator('a[href="#skill-library"]').click();
     const directory = await page.locator('#skill-library').boundingBox();
     assert.ok(directory && directory.y >= 0 && directory.y < 150, 'Browse skills jumps directly to the reader section');
+    if (variant === 'portable') {
+      await page.locator('#ai-helper-url').fill(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
+      await page.locator('#ai-pairing-code').fill('browser-pair-code');
+    }
+    await page.clock.install();
+    await page.locator('#ai-cluster').click();
+    await aiStarted;
+    assert.equal(await page.locator('#ai-cluster').textContent(), 'Clustering…');
+    assert.equal(await page.locator('#ai-cluster').isDisabled(), true);
+    assert.equal(await page.locator('#ai-progress').isVisible(), true);
+    assert.equal(await page.getByRole('progressbar').getAttribute('aria-valuenow'), null, 'Progress is indeterminate');
+    for (const width of [320, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width, 'Pending feedback fits the viewport');
+    }
+    assert.notEqual(await page.locator('.ai-progress-track > span').evaluate((element) => getComputedStyle(element).animationName), 'none');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    assert.equal(await page.locator('.ai-progress-track > span').evaluate((element) => getComputedStyle(element).animationName), 'none');
+    await page.clock.fastForward(31000);
+    assert.equal(await page.locator('#ai-elapsed').textContent(), '0:31 elapsed');
+    assert.match(await page.locator('#ai-progress-note').textContent() ?? '', /Still waiting for AI/);
+    await page.locator('#filter-skills').fill('build-two');
+    assert.equal(await page.locator('#ai-status').textContent(), 'Clustering 2 skills…');
+    assert.equal(await page.locator('#ai-elapsed').textContent(), '0:31 elapsed');
+    await page.clock.resume();
+    finishAi();
+    await page.waitForFunction(() => !document.querySelector('#ai-cluster')!.hasAttribute('aria-busy'));
+    assert.equal(await page.locator('#ai-progress').isVisible(), false);
+    assert.equal(await page.locator('#ai-elapsed').isVisible(), false);
+    assert.match(await page.locator('#ai-status').textContent() ?? '', /clustered 2 skills/);
   });
 }

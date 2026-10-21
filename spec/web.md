@@ -61,6 +61,15 @@
   while waiting; show a missing CLI, a login error, a timeout, or a malformed answer as an alert in
   the panel, retryable. The filter limits shown AI clusters as for word clusters. A new scan
   discards AI clusters and ignores a late answer.
+- While AI clustering waits, both views show a compact animated indeterminate bar, the skill
+  count captured for that request, and elapsed minutes/seconds updated every second. The button
+  says Clustering… and stays disabled. Explain that the full set is analyzed together and the
+  remaining time is unavailable; never invent percentages, processed-skill counts, or an ETA.
+  After 30 seconds, reassure users that AI is still pending and they can keep browsing.
+  Filtering must not change the in-flight request count or restart the timer. Stop and hide the
+  indicator/timer on success, failure, or a new scan; stale responses must not affect a newer
+  request's indicator. A retry starts at zero. Keep the bar accessible without aria-valuenow,
+  avoid live announcements every second, respect reduced motion, and fit 320px screens.
 - The portable page has no CLI; it asks a paired local **AI helper**, the `npm start` server, in the
   same window. Its With AI panel adds an AI helper address field (`http://127.0.0.1:3000` by
   default) and a Pairing code password field, kept in the current tab only, never in storage,

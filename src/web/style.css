@@ -103,6 +103,16 @@ input::placeholder { color: #7b8778; opacity: 1; }
 .cluster button:hover { background: #e1ebd6; }
 #no-clusters, #unclustered, #ai-status, #ai-no-clusters, #ai-unclustered { font-size: 12px; line-height: 1.7; color: var(--muted); margin: 12px 0 0; }
 #ai-status:empty, #unclustered:empty, #ai-unclustered:empty { display: none; }
+.ai-status-line { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; margin-top: 12px; }
+.ai-status-line:has(#ai-status:empty) { margin-top: 0; }
+.ai-status-line #ai-status { margin: 0; }
+#ai-elapsed { color: #77658b; font: 11px/1.7 ui-monospace, monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#ai-progress { margin: 10px 0 16px; }
+.ai-progress-track { height: 3px; border-radius: 3px; background: #e2d9ec; overflow: hidden; }
+.ai-progress-track > span { display: block; width: 35%; height: 100%; border-radius: inherit; background: #9980b0; animation: ai-waiting 1.8s ease-in-out infinite alternate; }
+#ai-progress-note { font-size: 11px; line-height: 1.6; color: #766782; margin: 8px 0 0; }
+@keyframes ai-waiting { from { transform: translateX(0); } to { transform: translateX(185%); } }
+@media (prefers-reduced-motion: reduce) { .ai-progress-track > span { animation: none; width: 100%; opacity: .5; } }
 #ai-clusters { background: #f3f0f7; border-color: #e1d9e9; }
 #ai-clusters .badge { background: #eae3f1; border-color: #dcd0e7; color: #6b537e; }
 #ai-clusters .cluster { border-color: #dfd5e8; border-left-color: #af9dc2; }

@@ -102,7 +102,13 @@
               </details>
             </div>
             <button id="ai-cluster" type="button">Cluster with AI</button>
-            <p id="ai-status" role="status"></p>
+            <div class="ai-feedback">
+              <div class="ai-status-line"><p id="ai-status" role="status"></p><span id="ai-elapsed" role="timer" aria-live="off" aria-label="Elapsed time" hidden></span></div>
+              <div id="ai-progress" hidden>
+                <div class="ai-progress-track" role="progressbar" aria-label="AI clustering in progress" aria-describedby="ai-progress-note"><span aria-hidden="true"></span></div>
+                <p id="ai-progress-note">The full set is analyzed together; remaining time is unavailable.</p>
+              </div>
+            </div>
             <div id="ai-error" role="alert" hidden></div>
             <div id="ai-cluster-list"></div>
             <p id="ai-no-clusters" hidden>Claude found no clusters among these skills.</p>
