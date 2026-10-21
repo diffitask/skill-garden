@@ -107,3 +107,10 @@
   empty successful organizations.
 - Organizations with no public repositories or complete scans with no skills show successful,
   distinct empty messages and repository counts. Regenerate the portable HTML after changes.
+
+## Project README
+- Introduce Skill Garden as a tool for discovering, reading, and reusing AI agent skills,
+  with screenshots, browser download instructions, local setup, and optional AI clustering.
+- While the design preview remains on a separate branch, label its screenshots and link its
+  portable HTML to the saved commit. Keep local setup and the main-branch portable filename
+  accurate for the current Skill Atlas interface.

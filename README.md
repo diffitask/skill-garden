@@ -1,53 +1,108 @@
-# Skill Atlas
+<div align="center">
 
-Every agent skill in a repository: `./skill-atlas scan` finds each `SKILL.md` and prints its name,
-description and link.
+# 🌸 Skill Garden
 
-```console
-$ npm ci
-$ ./skill-atlas scan https://github.com/JetBrains/kotlin
-JetBrains/kotlin · 6 skills
-In agents' folders · 6 skills
-…
-build-tools-bump-gradle-api — Bumps the Gradle API version that Kotlin Gradle plugins are compiled against in the Kotlin compiler repository.
-  https://github.com/JetBrains/kotlin/blob/5ab6270ab772d113e8ad52ebfcaa0109c522ae00/.claude/skills/build-tools-bump-gradle-api/SKILL.md
-…
+### Skills are like flowers. They bloom everywhere.
+
+Discover, read, and reuse AI agent skills from GitHub repositories and organizations.
+
+**[Get the HTML app](https://github.com/diffitask/skill-garden/blob/78036150a730c917bca671cb40b0a481b16c04d4/skill-garden.html)** · **[Try it locally](#try-it-locally)** · **[GitHub](https://github.com/diffitask/skill-garden)**
+
+No watering required.
+
+</div>
+
+A skill is a `SKILL.md` file containing instructions for an AI agent. Skill Garden brings those files together so you can see what an agent can do, understand its instructions, and find ideas for your own workflows.
+
+> The screenshots and **Get the HTML app** link show the saved Skill Garden design preview. The local app on `main` still uses the Skill Atlas name and interface; its portable file is [skill-atlas.html](skill-atlas.html).
+
+![Skill Garden: a botanical interface for discovering agent skills on GitHub](docs/screenshots/welcome.png)
+
+## Pick a repository. See what grows.
+
+Paste a GitHub repository or organization URL to discover its skills. Browse names and descriptions, filter the results, and follow links to the original instructions on GitHub. Organization scans cover public repositories, including forks and archived projects.
+
+- **Discover** skills and search their names and descriptions.
+- **Find connections** with shared-word clusters or optional AI grouping by meaning.
+- **Read clearly** with a skill summary and the full original instructions.
+- **Reuse what works** by taking useful instructions into your own agent workflows. The design preview adds formatted Markdown and a Copy skill button.
+
+![Related skills grouped into separate Without AI and With AI panels](docs/screenshots/clusters.png)
+
+## Your next idea might already be blooming.
+
+Select a skill to read its description and original `SKILL.md`, with a link pinned to the scanned GitHub commit. The preview shown below includes a formatted document reader and one-click copying of the original Markdown.
+
+![An IntelliJ skill and its full SKILL.md shown as a readable document](docs/screenshots/skill-document.png)
+
+## Try it — one HTML file
+
+1. Open **[skill-garden.html](https://github.com/diffitask/skill-garden/blob/78036150a730c917bca671cb40b0a481b16c04d4/skill-garden.html)** in this repository and choose **Download raw file**.
+2. Open the downloaded file in your browser.
+3. Enter a GitHub repository or organization URL and choose **Explore skills**.
+
+This downloads the saved design preview shown in the screenshots. Try [`JetBrains/intellij-community`](https://github.com/JetBrains/intellij-community) to explore the skills shown above.
+
+The HTML app is self-contained: no installation or local server is needed. An internet connection is required to scan public GitHub sources. If GitHub limits your requests, wait and retry, or enter an optional GitHub token. Browser tokens are sent only to GitHub and kept in the current tab; they are never saved.
+
+## Try it locally
+
+Requires **Node.js 24 or later**.
+
+```bash
+npm ci
+npm start
 ```
 
-Set `GITHUB_TOKEN` for a higher GitHub rate limit. `npm test` runs the tests.
-For browser layout integration tests, run `npx playwright install --with-deps chromium`
-once, then `npm run test:browser`. These exercise both views with replayed GitHub responses.
+Open [127.0.0.1:3000](http://127.0.0.1:3000). Set `PORT` to use another port. The local server can also scan private repositories with `GITHUB_TOKEN`.
 
-- [spec/](spec/): what it does. [AGENTS.md](AGENTS.md): the definition of done.
-- [fixture/](fixture/README.md): a small repository for the tests.
+### Optional: group skills with AI
 
-To browse skills locally, run `npm start` and open http://127.0.0.1:3000.
-Enter a GitHub repository or organization URL, then select a skill to read its full SKILL.md.
-Set `PORT` to change the port, and optionally `GITHUB_TOKEN` for private repositories or higher API limits.
+Install Claude Code and log in, then run `npm start` and choose **Cluster with AI**. The helper uses Claude Haiku 4.5 and sends skill names and descriptions to Claude.
 
-Above the skill list, **Skill clusters** groups skills by topic: *Without AI* by distinctive shared
-words, and, in the local server view, *With AI* by Claude Haiku 4.5 when you press **Cluster with AI**.
-That runs the Claude Code CLI headless (`claude -p`, no tools) on the server, so install Claude Code
-and log in first; set `CLAUDE_BIN` if `claude` is not on the `PATH`. Skill names and descriptions
-are sent to Claude.
+To use AI from the downloaded HTML app, enter the pairing code printed by `npm start` in its **With AI** panel (expand **Connect your local AI helper** in the design preview). Keep the server running. Set `CLAUDE_BIN` if the CLI is outside your `PATH`.
 
-**skill-atlas.html** can use AI clusters too: keep `npm start` running, then paste the
-**AI pairing code** it prints into the With AI panel (the AI helper address defaults to
-`http://127.0.0.1:3000`). Other pages without the code are refused.
+<details>
+<summary><strong>CLI, development, and tests</strong></summary>
 
-For a version that needs no server or port setup, open **skill-atlas.html** directly
-in your browser. It browses public repositories and organizations and needs an internet connection.
-Regenerate the file with `npm run build:web` after changing the UI or scanner.
+The command-line entry point is `skill-atlas`:
 
-If GitHub reports a request limit in the portable page, paste a personal access token
-into the **GitHub token (optional)** field below the repository URL, then click **Try again**. The token is sent only to
-GitHub and kept in the current tab; it is never saved. You can also wait for
-GitHub's limit to reset and retry without a token.
+```bash
+./skill-atlas scan https://github.com/JetBrains/intellij-community
+./skill-atlas scan https://github.com/JetBrains
+```
 
-Scan an entire organization's public repositories with
-`./skill-atlas scan https://github.com/JetBrains`. Organization scans include forks and
-archived repositories, keep skills grouped by repository, and report repository and skill
-counts. Private repositories are excluded even with a token. Empty or failed repositories
-produce warnings; completed results remain available and incomplete CLI scans exit with
-status 1. Organization scans can take longer than a single repository scan. User account
-URLs are rejected with an explanation.
+It prints skill names, descriptions, and commit-pinned GitHub links. Set `GITHUB_TOKEN` for private repository access or higher API limits. Organization scans include public repositories only, including forks and archived repositories. User account URLs are not organization URLs.
+
+Large repositories can return partial results when GitHub truncates a tree; warnings explain the scope. Failed repository scans preserve completed organization results. Incomplete CLI scans exit with status 1.
+
+Rebuild the portable HTML after changing the UI or scanner:
+
+```bash
+npm run build:web
+```
+
+Run the checks:
+
+```bash
+npm test
+npx playwright install --with-deps chromium
+npm run test:browser
+npm run typecheck
+```
+
+Browser integration tests exercise both the server and portable HTML with replayed GitHub responses.
+
+[Specs](spec/) · [Development instructions](AGENTS.md) · [Test fixture](fixture/README.md)
+
+</details>
+
+---
+
+<div align="center">
+
+**Explore new skills. Grow your own garden.**
+
+[github.com/diffitask/skill-garden](https://github.com/diffitask/skill-garden)
+
+</div>
