@@ -41,8 +41,18 @@
   like the word clusters; the rest are not in a cluster. Show progress and disable the button
   while waiting; show a missing CLI, a login error, a timeout, or a malformed answer as an alert in
   the panel, retryable. The filter limits shown AI clusters as for word clusters. A new scan
-  discards AI clusters and ignores a late answer. The portable page has no CLI: its button is
-  disabled and explains that AI clustering runs in the local server view.
+  discards AI clusters and ignores a late answer.
+- The portable page has no CLI; it asks a paired local **AI helper**, the `npm start` server, in the
+  same window. Its With AI panel adds an AI helper address field (`http://127.0.0.1:3000` by
+  default) and a Pairing code password field, kept in the current tab only, never in storage,
+  URLs, or HTML. The button stays disabled without a code. An unreachable helper, an invalid
+  address, and a rejected code each give an actionable alert.
+- `npm start` prints a random pairing code (`SKILL_ATLAS_AI_CODE` overrides it). The AI endpoint
+  answers CORS preflights, including Chrome's private-network request, and readable responses for
+  any origin, but runs Claude only for: no Origin (a local tool), its own page (Origin equals
+  `http://` + Host, with a `127.0.0.1` or `localhost` Host, so rebound DNS names fail), or a matching
+  `X-Skill-Atlas-Code` header, compared in constant time; otherwise 403. One clustering runs at a
+  time per server; a concurrent request gets 429.
 
 ## Portable page
 - `npm run build:web` produces a self-contained `skill-atlas.html` to open directly in a browser. No server, port forwarding, CDN scripts, or package installation is needed to use the generated file.

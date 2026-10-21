@@ -180,14 +180,33 @@ let aiRequest = 0;
 const aiButton = document.querySelector('#ai-cluster');
 const aiStatus = document.querySelector('#ai-status');
 const aiError = document.querySelector('#ai-error');
+const aiHelperUrl = document.querySelector('#ai-helper-url');
+const aiPairingCode = document.querySelector('#ai-pairing-code');
+for (const field of [aiHelperUrl, aiPairingCode]) field.addEventListener('input', () => { if (scanData) renderSkills(); });
+
+/** The portable page reaches `claude -p` through a local server it is paired with. */
+function aiEndpoint() {
+  if (typeof globalThis.skillAtlasScan !== 'function') return { url: '/api/ai-clusters', headers: {} };
+  let base;
+  try {
+    base = new URL(aiHelperUrl.value.trim());
+  } catch {
+    throw new Error('Enter the AI helper address, such as http://127.0.0.1:3000.');
+  }
+  if (!/^https?:$/.test(base.protocol)) throw new Error('Enter the AI helper address, such as http://127.0.0.1:3000.');
+  return { url: new URL('/api/ai-clusters', base).href, headers: { 'X-Skill-Atlas-Code': aiPairingCode.value.trim() } };
+}
 
 function renderAiClusters(byId) {
   const portable = typeof globalThis.skillAtlasScan === 'function';
   const busy = aiButton.hasAttribute('aria-busy');
-  aiButton.disabled = portable || busy || byId.size < 2;
+  const unpaired = portable && !aiPairingCode.value.trim();
+  aiButton.disabled = unpaired || busy || byId.size < 2;
   aiButton.textContent = aiResult ? `Cluster ${byId.size} ${byId.size === 1 ? 'skill' : 'skills'} again` : `Cluster ${byId.size} ${byId.size === 1 ? 'skill' : 'skills'} with AI`;
-  if (portable) aiStatus.textContent = 'AI clustering runs in the local server view: start it with npm start, with Claude Code installed and logged in.';
-  else if (!busy && !aiResult && aiError.hidden) aiStatus.textContent = byId.size < 2 ? 'AI clustering needs at least two shown skills.' : '';
+  if (!busy && !aiResult && aiError.hidden) {
+    aiStatus.textContent = byId.size < 2 ? 'AI clustering needs at least two shown skills.'
+      : unpaired ? 'Paste the pairing code from npm start to cluster with AI.' : '';
+  }
   const container = document.querySelector('#ai-cluster-list');
   if (!aiResult) {
     container.replaceChildren();
@@ -221,10 +240,18 @@ aiButton.addEventListener('click', async () => {
   aiStatus.textContent = `Asking Claude Haiku 4.5 to cluster ${skills.length} skills…`;
   renderSkills();
   try {
-    const response = await fetch('/api/ai-clusters', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ skills }),
-    });
-    const data = await response.json();
+    const endpoint = aiEndpoint();
+    let response;
+    try {
+      response = await fetch(endpoint.url, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...endpoint.headers }, body: JSON.stringify({ skills }),
+      });
+    } catch {
+      throw new Error(endpoint.headers['X-Skill-Atlas-Code'] === undefined
+        ? 'Could not reach the server. Check that it is still running, then try again.'
+        : `Could not reach the AI helper at ${new URL(endpoint.url).origin}. Start it with npm start, check the address, then try again.`);
+    }
+    const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'AI clustering failed.');
     if (request !== aiRequest) return;
     aiResult = data;

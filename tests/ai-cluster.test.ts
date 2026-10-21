@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
+import { request } from 'node:http';
 import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -274,22 +275,136 @@ test('local web: With AI beside Without AI clusters the shown skills on request,
   assert.deepEqual(errors, []);
 });
 
-test('portable page: With AI explains that it needs the local server and sends nothing', async (t) => {
-  const requests: string[] = [];
+test('the AI helper answers other pages only with the pairing code, and one request at a time', async (t) => {
+  let release!: () => void;
+  const server = createWebServer({
+    pairingCode: 'pair-code-123',
+    ask: () => new Promise((resolve) => { release = () => resolve({ clusters: [{ label: 'Office', skills: ['s1', 's2'] }] }); }),
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  t.after(() => server.close());
+  const port = (server.address() as AddressInfo).port;
+  const url = `http://127.0.0.1:${port}/api/ai-clusters`;
+  const body = JSON.stringify({ skills: [skill('pdf'), skill('docx')] });
+  const post = (headers: Record<string, string>) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body });
+
+  const preflight = await fetch(url, { method: 'OPTIONS', headers: {
+    Origin: 'null', 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'content-type,x-skill-atlas-code',
+    'Access-Control-Request-Private-Network': 'true',
+  } });
+  assert.equal(preflight.status, 204);
+  assert.equal(preflight.headers.get('access-control-allow-origin'), '*');
+  assert.equal(preflight.headers.get('access-control-allow-methods'), 'POST');
+  assert.match(preflight.headers.get('access-control-allow-headers')!, /X-Skill-Atlas-Code/);
+  assert.equal(preflight.headers.get('access-control-allow-private-network'), 'true');
+
+  for (const headers of [{ Origin: 'null' }, { Origin: 'null', 'X-Skill-Atlas-Code': 'wrong' }, { Origin: 'https://evil.example', 'X-Skill-Atlas-Code': 'pair-code-12' },
+    { Origin: `http://localhost:${port}` }] as Record<string, string>[]) {
+    const response = await post(headers);
+    assert.equal(response.status, 403, JSON.stringify(headers));
+    assert.equal(response.headers.get('access-control-allow-origin'), '*', 'Errors are readable by the page');
+    assert.match((await response.json()).error, /rejected the pairing code/);
+  }
+  const paired = post({ Origin: 'null', 'X-Skill-Atlas-Code': 'pair-code-123' });
+  await until(() => release !== undefined);
+  const busy = await post({ Origin: `http://127.0.0.1:${port}` });
+  assert.equal(busy.status, 429, "This server's own page needs no code, but waits its turn");
+  assert.match((await busy.json()).error, /already clustering/);
+  release();
+  const response = await paired;
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).clusters, [{ words: ['Office'], skills: ids('pdf', 'docx') }]);
+  // fetch cannot set Host: send these with node:http, as a rebound DNS name would arrive.
+  const raw = (host: string, origin: string) => new Promise<number>((resolve, reject) => {
+    const sent = request({ host: '127.0.0.1', port, path: '/api/ai-clusters', method: 'POST',
+      headers: { Host: host, Origin: origin, 'Content-Type': 'application/json' } }, (answer) => { answer.resume(); resolve(answer.statusCode!); });
+    sent.on('error', reject);
+    sent.end(body);
+    setTimeout(() => release(), 20);
+  });
+  assert.equal(await raw('evil.example:3000', 'http://evil.example:3000'), 403, 'A rebound name is not this server');
+  assert.equal(await raw(`localhost:${port}`, `http://localhost:${port}`), 200, 'Its own page under localhost needs no code');
+
+  const unpaired = createWebServer({ ask: async () => ({ clusters: [] }) });
+  unpaired.listen(0, '127.0.0.1');
+  await once(unpaired, 'listening');
+  t.after(() => unpaired.close());
+  const other = await fetch(`http://127.0.0.1:${(unpaired.address() as AddressInfo).port}/api/ai-clusters`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'null', 'X-Skill-Atlas-Code': '' }, body,
+  });
+  assert.equal(other.status, 403, 'Without a pairing code, no other page is let in');
+});
+
+test('portable page: With AI asks the paired local helper and shows its clusters in the same window', async (t) => {
+  const prompts: string[] = [];
+  const helper = createWebServer({ pairingCode: 'pair-code-123', ask: async ({ prompt }) => {
+    prompts.push(prompt);
+    return { clusters: [{ label: 'Office', skills: ['s1', 's3', 's4'] }] };
+  } });
+  helper.listen(0, '127.0.0.1');
+  await once(helper, 'listening');
+  t.after(() => helper.close());
+  const helperUrl = `http://127.0.0.1:${(helper.address() as AddressInfo).port}`;
+  const requests: { url: string; headers: Record<string, string> }[] = [];
   const github = recordedGitHub();
   const dom = new JSDOM(await portableHtml(), {
     url: 'file:///skill-atlas.html', runScripts: 'dangerously',
     beforeParse(window) {
       Object.assign(window, { TextDecoder, TextEncoder });
-      window.fetch = (input, init) => { requests.push(String(input)); return github(String(input), init as { headers?: Record<string, string> }); };
+      window.fetch = (input, init) => {
+        const url = String(input);
+        requests.push({ url, headers: (init?.headers ?? {}) as Record<string, string> });
+        // The page is a file: it reaches the helper as another origin would.
+        if (url.startsWith('http://127.0.0.1')) return fetch(url, { ...init, headers: { ...(init?.headers as Record<string, string>), Origin: 'null' } });
+        return github(url, init as { headers?: Record<string, string> });
+      };
     },
   });
   t.after(() => dom.window.close());
   await scanned(dom);
-  const button = dom.window.document.querySelector<HTMLButtonElement>('#ai-cluster')!;
-  assert.equal(button.disabled, true);
-  assert.match(dom.window.document.querySelector('#ai-status')!.textContent!, /runs in the local server view: start it with npm start/);
+  const document = dom.window.document;
+  const element = (id: string) => document.querySelector<HTMLElement>(id)!;
+  const button = document.querySelector<HTMLButtonElement>('#ai-cluster')!;
+  const address = document.querySelector<HTMLInputElement>('#ai-helper-url')!;
+  const code = document.querySelector<HTMLInputElement>('#ai-pairing-code')!;
+  const type = (field: HTMLInputElement, value: string) => {
+    field.value = value;
+    field.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+  };
+  assert.equal(element('#ai-helper').hidden, false);
+  assert.equal(document.querySelector('label[for="ai-helper-url"]')!.textContent, 'AI helper address');
+  assert.equal(document.querySelector('label[for="ai-pairing-code"]')!.textContent, 'Pairing code');
+  assert.equal(address.value, 'http://127.0.0.1:3000');
+  assert.equal(code.type, 'password');
+  assert.equal(button.disabled, true, 'No code, no request');
+  assert.match(element('#ai-status').textContent!, /Paste the pairing code from npm start/);
+
+  type(address, 'http://127.0.0.1:1');
+  type(code, 'pair-code-123');
+  assert.equal(button.disabled, false);
   button.click();
-  await new Promise((resolve) => setTimeout(resolve, 20));
-  assert.ok(requests.every((url) => url.startsWith('https://')), 'No AI request from the portable page');
+  await until(() => !element('#ai-error').hidden);
+  assert.match(element('#ai-error').textContent!, /Could not reach the AI helper at http:\/\/127\.0\.0\.1:1\. Start it with npm start/);
+
+  type(address, 'not a url');
+  button.click();
+  await until(() => /Enter the AI helper address/.test(element('#ai-error').textContent!));
+
+  type(address, helperUrl);
+  type(code, 'wrong');
+  button.click();
+  await until(() => /rejected the pairing code/.test(element('#ai-error').textContent!));
+  assert.equal(prompts.length, 0);
+
+  type(code, ' pair-code-123 ');
+  button.click();
+  await until(() => element('#ai-error').hidden && !button.hasAttribute('aria-busy') && prompts.length === 1);
+  const sent = requests.filter((request) => request.url.endsWith('/api/ai-clusters')).at(-1)!;
+  assert.equal(sent.url, `${helperUrl}/api/ai-clusters`);
+  assert.equal(sent.headers['X-Skill-Atlas-Code'], 'pair-code-123');
+  const cards = [...document.querySelectorAll('#ai-cluster-list .cluster')].map((card) => [...card.querySelectorAll('button')].map((item) => item.textContent));
+  assert.deepEqual(cards, [['docx', 'pdf', 'xlsx']]);
+  assert.equal(element('#ai-status').textContent, 'Claude Haiku 4.5 clustered 4 skills.');
+  assert.ok(!document.documentElement.outerHTML.includes('pair-code-123'), 'The code is not written into the page');
 });
