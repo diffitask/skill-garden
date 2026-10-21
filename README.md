@@ -21,13 +21,15 @@ Explore the `SKILL.md` files inside a GitHub repository or an organization's pub
 - **Discover** skills and search their names and descriptions.
 - **Find connections** with shared-word clusters or optional AI grouping by meaning.
 - **Read clearly** with a skill summary and a formatted full document.
-- **Make it yours** by copying the original Markdown, including its metadata.
+- **Reuse what works** by bringing useful instructions into your own agent workflows.
 
-![Related skills grouped into separate Without AI and With AI panels](docs/screenshots/clusters.png)
+![Word clusters and an example AI clustering result shown side by side](docs/screenshots/clusters.png)
+
+*The AI panel shows an illustrative response rendered by the application.*
 
 ## Your next idea might already be blooming.
 
-Open one skill, see what it does, and explore its full instructions. Copy the original `SKILL.md` when you find something useful.
+Open one skill, see what it does, and explore its full instructions. Follow its GitHub link to find the original source.
 
 ![An IntelliJ skill and its full SKILL.md shown as a readable document](docs/screenshots/skill-document.png)
 

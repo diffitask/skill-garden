@@ -21,7 +21,7 @@
   GitHub repositories, find inspiration, and reuse skills in your own work.
 - The English botanical concept is the large hero heading “Skills are like flowers.”,
   followed by the smaller line “They bloom everywhere.” and a prominent bold two-line link:
-  “Discover skills.” / “Find new possibilities.”, which moves to the repository form.
+  “Discover skills.” / “Find new ideas.”, which moves to the repository form.
   A single short description explains AI agent skills, GitHub discovery,
   and reuse. Both the heading and invitation stay large on mobile; the bloom line is smaller
   than both. Show a self-contained botanical specimen illustration on desktop.

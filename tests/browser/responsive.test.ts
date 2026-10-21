@@ -84,7 +84,7 @@ for (const variant of ['server', 'portable'] as const) {
     assert.equal(await page.locator('#skills button').count(), 2);
     assert.equal(await page.locator('.intro-copy h1').textContent(), 'Skills are like flowers.');
     assert.equal(await page.locator('.intro-tagline').textContent(), 'They bloom everywhere.');
-    assert.deepEqual(await page.locator('.intro-link > span').allTextContents(), ['Discover skills.', 'Find new possibilities. ↗']);
+    assert.deepEqual(await page.locator('.intro-link > span').allTextContents(), ['Discover skills.', 'Find new ideas. ↗']);
     const heroType = await page.evaluate(() => {
       const style = (selector: string) => getComputedStyle(document.querySelector(selector)!);
       return { heading: parseFloat(style('.intro-copy h1').fontSize), invitation: parseFloat(style('.intro-link').fontSize),
