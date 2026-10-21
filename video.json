@@ -1,0 +1,144 @@
+{
+  "duration": 39.76,
+  "bytes": 593824,
+  "sha256": "277fb698a8649c68ccd0a16dab0131979724f8e876cd44b258f7cffeecea9059",
+  "moments": [
+    {
+      "seconds": 0.2,
+      "kind": "chapter",
+      "label": "Before",
+      "summary": "A verdict for skills never sent.",
+      "finalSeconds": 0.0
+    },
+    {
+      "seconds": 3.1,
+      "kind": "callout",
+      "text": "Only these 2 go to AI",
+      "selector": "#ai-cluster",
+      "finalSeconds": 2.9
+    },
+    {
+      "seconds": 7.1,
+      "kind": "callout",
+      "text": "4 visible. Only 2 were sent.",
+      "selector": "#count",
+      "finalSeconds": 6.9
+    },
+    {
+      "seconds": 11.5,
+      "kind": "callout",
+      "text": "These skills were never evaluated.",
+      "selector": "#ai-no-clusters",
+      "finalSeconds": 11.3
+    },
+    {
+      "seconds": 16.9,
+      "kind": "chapter",
+      "label": "After",
+      "summary": "Unsent skills are clearly marked.",
+      "finalSeconds": 16.6
+    },
+    {
+      "seconds": 19.8,
+      "kind": "callout",
+      "text": "Only these 2 go to AI",
+      "selector": "#ai-cluster",
+      "finalSeconds": 19.5
+    },
+    {
+      "seconds": 23.8,
+      "kind": "callout",
+      "text": "4 visible. Only 2 were sent.",
+      "selector": "#count",
+      "finalSeconds": 23.5
+    },
+    {
+      "seconds": 28.2,
+      "kind": "callout",
+      "text": "New: clearly marked as not sent",
+      "selector": "#ai-unsent",
+      "finalSeconds": 27.9
+    },
+    {
+      "seconds": 33.4,
+      "kind": "callout",
+      "text": "Cluster again to include them",
+      "selector": "#ai-cluster",
+      "finalSeconds": 33.1
+    },
+    {
+      "seconds": 35.7,
+      "kind": "callout",
+      "text": "Now this is an evaluated result.",
+      "selector": "#ai-unclustered",
+      "finalSeconds": 35.4
+    }
+  ],
+  "observations": [
+    {
+      "name": "before-all-skills",
+      "phase": "Before",
+      "seconds": 8.6,
+      "count": "4 of 4 skills",
+      "clusterCount": "1 cluster",
+      "cards": 1,
+      "unsent": null,
+      "noClustersVisible": false,
+      "unclustered": "",
+      "status": "Claude Haiku 4.5 clustered 2 skills.",
+      "finalSeconds": 8.4
+    },
+    {
+      "name": "before-only-unsent",
+      "phase": "Before",
+      "seconds": 11.7,
+      "count": "2 of 4 skills",
+      "clusterCount": "0 clusters",
+      "cards": 0,
+      "unsent": null,
+      "noClustersVisible": true,
+      "unclustered": "",
+      "status": "Claude Haiku 4.5 clustered 2 skills.",
+      "finalSeconds": 11.5
+    },
+    {
+      "name": "after-all-skills",
+      "phase": "After",
+      "seconds": 25.3,
+      "count": "4 of 4 skills",
+      "clusterCount": "1 cluster",
+      "cards": 1,
+      "unsent": "Not sent to Claude: 2 skills. Cluster again to include them.",
+      "noClustersVisible": false,
+      "unclustered": "",
+      "status": "Claude Haiku 4.5 clustered 2 skills.",
+      "finalSeconds": 25.0
+    },
+    {
+      "name": "after-only-unsent",
+      "phase": "After",
+      "seconds": 28.4,
+      "count": "2 of 4 skills",
+      "clusterCount": "0 clusters",
+      "cards": 0,
+      "unsent": "Not sent to Claude: 2 skills. Cluster again to include them.",
+      "noClustersVisible": false,
+      "unclustered": "",
+      "status": "Claude Haiku 4.5 clustered 2 skills.",
+      "finalSeconds": 28.1
+    },
+    {
+      "name": "after-reclustered",
+      "phase": "After",
+      "seconds": 35.9,
+      "count": "2 of 4 skills",
+      "clusterCount": "0 clusters",
+      "cards": 0,
+      "unsent": "",
+      "noClustersVisible": true,
+      "unclustered": "Not in a cluster: 2 skills",
+      "status": "Claude Haiku 4.5 clustered 2 skills.",
+      "finalSeconds": 35.6
+    }
+  ]
+}

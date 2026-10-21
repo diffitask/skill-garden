@@ -1,0 +1,143 @@
+{
+  "repository": "diffitask/ai-workshop-2026",
+  "pr": 26,
+  "presentationRevision": 2,
+  "base": "badedeb24d2ec434dc7966510d69fed71bccbf96",
+  "head": "d9000bc0cb769db10675087efabbe3bf417dc851",
+  "browser": "156.0.8078.4",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "view": "server",
+  "transport": "Replayed GitHub fixture; delayed deterministic model stub, not live Claude",
+  "observations": [
+    {
+      "name": "before-all-skills",
+      "phase": "Before",
+      "seconds": 8.6,
+      "count": "4 of 4 skills",
+      "clusterCount": "1 cluster",
+      "cards": 1,
+      "unsent": null,
+      "noClustersVisible": false,
+      "unclustered": "",
+      "status": "Claude Haiku 4.5 clustered 2 skills."
+    },
+    {
+      "name": "before-only-unsent",
+      "phase": "Before",
+      "seconds": 11.7,
+      "count": "2 of 4 skills",
+      "clusterCount": "0 clusters",
+      "cards": 0,
+      "unsent": null,
+      "noClustersVisible": true,
+      "unclustered": "",
+      "status": "Claude Haiku 4.5 clustered 2 skills."
+    },
+    {
+      "name": "after-all-skills",
+      "phase": "After",
+      "seconds": 25.3,
+      "count": "4 of 4 skills",
+      "clusterCount": "1 cluster",
+      "cards": 1,
+      "unsent": "Not sent to Claude: 2 skills. Cluster again to include them.",
+      "noClustersVisible": false,
+      "unclustered": "",
+      "status": "Claude Haiku 4.5 clustered 2 skills."
+    },
+    {
+      "name": "after-only-unsent",
+      "phase": "After",
+      "seconds": 28.4,
+      "count": "2 of 4 skills",
+      "clusterCount": "0 clusters",
+      "cards": 0,
+      "unsent": "Not sent to Claude: 2 skills. Cluster again to include them.",
+      "noClustersVisible": false,
+      "unclustered": "",
+      "status": "Claude Haiku 4.5 clustered 2 skills."
+    },
+    {
+      "name": "after-reclustered",
+      "phase": "After",
+      "seconds": 35.9,
+      "count": "2 of 4 skills",
+      "clusterCount": "0 clusters",
+      "cards": 0,
+      "unsent": "",
+      "noClustersVisible": true,
+      "unclustered": "Not in a cluster: 2 skills",
+      "status": "Claude Haiku 4.5 clustered 2 skills."
+    }
+  ],
+  "moments": [
+    {
+      "seconds": 0.2,
+      "kind": "chapter",
+      "label": "Before",
+      "summary": "A verdict for skills never sent."
+    },
+    {
+      "seconds": 3.1,
+      "kind": "callout",
+      "text": "Only these 2 go to AI",
+      "selector": "#ai-cluster"
+    },
+    {
+      "seconds": 7.1,
+      "kind": "callout",
+      "text": "4 visible. Only 2 were sent.",
+      "selector": "#count"
+    },
+    {
+      "seconds": 11.5,
+      "kind": "callout",
+      "text": "These skills were never evaluated.",
+      "selector": "#ai-no-clusters"
+    },
+    {
+      "seconds": 16.9,
+      "kind": "chapter",
+      "label": "After",
+      "summary": "Unsent skills are clearly marked."
+    },
+    {
+      "seconds": 19.8,
+      "kind": "callout",
+      "text": "Only these 2 go to AI",
+      "selector": "#ai-cluster"
+    },
+    {
+      "seconds": 23.8,
+      "kind": "callout",
+      "text": "4 visible. Only 2 were sent.",
+      "selector": "#count"
+    },
+    {
+      "seconds": 28.2,
+      "kind": "callout",
+      "text": "New: clearly marked as not sent",
+      "selector": "#ai-unsent"
+    },
+    {
+      "seconds": 33.4,
+      "kind": "callout",
+      "text": "Cluster again to include them",
+      "selector": "#ai-cluster"
+    },
+    {
+      "seconds": 35.7,
+      "kind": "callout",
+      "text": "Now this is an evaluated result.",
+      "selector": "#ai-unclustered"
+    }
+  ],
+  "edits": {
+    "start": 0.2,
+    "beforeEnd": 16.8,
+    "afterStart": 16.9
+  }
+}
