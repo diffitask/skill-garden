@@ -23,7 +23,7 @@ export function configuration(env, now = new Date()) {
   const channel = env.STATUS_UPDATE_CHANNEL;
   if (!/^[CG][A-Z0-9]+$/.test(channel || '')) throw new Error('STATUS_UPDATE_CHANNEL must be a Slack channel ID');
   const timezone = env.STATUS_UPDATE_TIMEZONE || 'Europe/Moscow';
-  try { new Intl.DateTimeFormat('ru-RU', { timeZone: timezone }); } catch { throw new Error('Invalid STATUS_UPDATE_TIMEZONE'); }
+  try { new Intl.DateTimeFormat('en-GB', { timeZone: timezone }); } catch { throw new Error('Invalid STATUS_UPDATE_TIMEZONE'); }
   const messageTs = env.STATUS_UPDATE_MESSAGE_TS;
   if (messageTs !== undefined && !/^\d+\.\d+$/.test(messageTs)) throw new Error('Invalid STATUS_UPDATE_MESSAGE_TS');
   return { repository, since, until, channel, timezone, ...(messageTs ? { messageTs } : {}) };
@@ -63,15 +63,15 @@ function decisions(reviews, cutoff) {
 }
 
 export function prStatus(pr) {
-  if (pr.draft) return { key: 'draft', label: '🛠 Черновик' };
+  if (pr.draft) return { key: 'draft', label: '🛠 Draft' };
   const effective = decisions(pr.reviews, '9999');
-  if (effective.some(r => r.state === 'CHANGES_REQUESTED')) return { key: 'changes', label: '🔧 Нужны правки' };
-  if (pr.requested.length || pr.teams.length) return { key: 'waiting', label: '👀 Ждёт ревью' };
+  if (effective.some(r => r.state === 'CHANGES_REQUESTED')) return { key: 'changes', label: '🔧 Changes requested' };
+  if (pr.requested.length || pr.teams.length) return { key: 'waiting', label: '👀 Awaiting review' };
   const approvals = effective.filter(r => r.state === 'APPROVED');
-  if (approvals.some(r => r.commit === pr.head)) return { key: 'approved', label: '👍 Есть одобрение' };
-  if (approvals.length) return { key: 'stale', label: '🔄 Изменён после одобрения' };
-  if (pr.reviews.some(r => r.state === 'COMMENTED')) return { key: 'discussion', label: '💬 Обсуждение, одобрения нет' };
-  return { key: 'open', label: '✍️ Открыт, ревью не назначено' };
+  if (approvals.some(r => r.commit === pr.head)) return { key: 'approved', label: '👍 Has approval' };
+  if (approvals.length) return { key: 'stale', label: '🔄 Updated since approval' };
+  if (pr.reviews.some(r => r.state === 'COMMENTED')) return { key: 'discussion', label: '💬 Discussion, no approval' };
+  return { key: 'open', label: '✍️ Open, no reviewer assigned' };
 }
 
 export async function collect(config, request) {
@@ -146,44 +146,44 @@ export function render(config, { prs, open, issues, reviewActivity }) {
     return people.get(name);
   };
   const link = (item, kind = 'pull') => `<https://github.com/${config.repository}/${kind}/${item.number}|#${item.number}> ${escape(item.title)}`;
-  const name = value => value ? escape(value) : 'пользователь удалён';
+  const name = value => value ? escape(value) : 'deleted user';
   for (const pr of open) {
     let detail = '';
-    if (pr.status.key === 'waiting') detail = ` · ждём: ${[...pr.requested.map(name), ...pr.teams.map(t => `команда ${escape(t)}`)].join(', ')}`;
-    if (pr.status.key === 'changes') detail = ` · от ${decisions(pr.reviews, '9999').filter(r => r.state === 'CHANGES_REQUESTED').map(r => name(r.user)).join(', ')}`;
+    if (pr.status.key === 'waiting') detail = ` · waiting for: ${[...pr.requested.map(name), ...pr.teams.map(t => `team ${escape(t)}`)].join(', ')}`;
+    if (pr.status.key === 'changes') detail = ` · requested by ${decisions(pr.reviews, '9999').filter(r => r.state === 'CHANGES_REQUESTED').map(r => name(r.user)).join(', ')}`;
     if (pr.status.key === 'approved') detail = ` · ${decisions(pr.reviews, '9999').filter(r => r.state === 'APPROVED' && r.commit === pr.head).map(r => name(r.user)).join(', ')}`;
-    person(pr.author || 'Автор удалён').authored.push(`${pr.status.label} · ${link(pr)}${detail}`);
-    if (!pr.draft) for (const reviewer of pr.requested) person(reviewer).waiting.push(`👀 ${link(pr)} · автор ${name(pr.author)}`);
+    person(pr.author || 'Deleted author').authored.push(`${pr.status.label} · ${link(pr)}${detail}`);
+    if (!pr.draft) for (const reviewer of pr.requested) person(reviewer).waiting.push(`👀 ${link(pr)} · author ${name(pr.author)}`);
   }
   for (const pr of prs) {
     const approved = decisions(pr.reviews, pr.time).filter(r => r.state === 'APPROVED').map(r => name(r.user));
-    person(pr.author || 'Автор удалён').merged.push({ line: `✅ ${link(pr)}`,
-      detail: `${approved.length ? `Одобрили: ${approved.join(', ')}` : 'Формального одобрения нет'} · влил ${name(pr.mergedBy)}` });
+    person(pr.author || 'Deleted author').merged.push({ line: `✅ ${link(pr)}`,
+      detail: `${approved.length ? `Approved by: ${approved.join(', ')}` : 'No formal approval recorded'} · merged by ${name(pr.mergedBy)}` });
   }
   for (const review of reviewActivity) {
-    const action = { APPROVED: '👍 Одобрил', CHANGES_REQUESTED: '🔧 Запросил правки', COMMENTED: '💬 Прокомментировал' }[review.state];
+    const action = { APPROVED: '👍 Approved', CHANGES_REQUESTED: '🔧 Requested changes', COMMENTED: '💬 Commented' }[review.state];
     person(review.user).reviewed.push(`${action} · ${link(review)}`);
   }
-  for (const issue of issues) for (const assignee of new Set(issue.assignees.length ? issue.assignees : ['Без исполнителя'])) {
+  for (const issue of issues) for (const assignee of new Set(issue.assignees.length ? issue.assignees : ['Unassigned'])) {
     person(assignee).completed.push(`☑️ ${link(issue, 'issues')}`);
   }
-  const format = value => new Intl.DateTimeFormat('ru-RU', { timeZone: config.timezone, day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(value));
+  const format = value => new Intl.DateTimeFormat('en-GB', { timeZone: config.timezone, day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(value));
   const period = `${format(config.since)} — ${format(config.until)} · ${config.timezone}`;
   const requestedCount = open.filter(pr => !pr.draft && (pr.requested.length || pr.teams.length)).length;
-  const summary = `Открыто: ${open.length} · Ждут ревью: ${requestedCount} · Влито: ${prs.length} · Задач закрыто: ${issues.length}`;
+  const summary = `Open: ${open.length} · Awaiting review: ${requestedCount} · Merged: ${prs.length} · Issues completed: ${issues.length}`;
   const blocks = [
-    { type: 'header', text: { type: 'plain_text', text: 'Команда · GitHub', emoji: true } },
+    { type: 'header', text: { type: 'plain_text', text: 'Team update · GitHub', emoji: true } },
     { type: 'context', elements: [{ type: 'mrkdwn', text: `<https://github.com/${config.repository}|${config.repository}> · ${period}` }] },
-    { type: 'section', text: { type: 'mrkdwn', text: summary.replace(/(Открыто|Ждут ревью|Влито|Задач закрыто): (\d+)/g, '*$1:* $2') } },
-    { type: 'context', elements: [{ type: 'plain_text', text: 'Открытые PR — текущий снимок. Влитые PR, ревью и закрытые задачи — за период. Одобрение ≠ готовность к слиянию.' }] },
+    { type: 'section', text: { type: 'mrkdwn', text: summary.replace(/(Open|Awaiting review|Merged|Issues completed): (\d+)/g, '*$1:* $2') } },
+    { type: 'context', elements: [{ type: 'plain_text', text: 'Open PRs are a current snapshot. Merges, reviews and completed issues cover the reporting period. An approval does not mean ready to merge.' }] },
   ];
-  const textParts = [`Команда · ${config.repository}`, period, `[${config.since}, ${config.until})`, summary,
-    'Открытые PR — текущий снимок; завершённое и ревью — за период.'];
+  const textParts = [`Team update · ${config.repository}`, period, `[${config.since}, ${config.until})`, summary,
+    'Open PRs are a current snapshot; completed work and reviews cover the reporting period.'];
   const ordered = [...people.values()].sort((a, b) => Number(Boolean(b.waiting.length || b.authored.length)) - Number(Boolean(a.waiting.length || a.authored.length)) || a.name.localeCompare(b.name));
   for (const p of ordered) {
-    const heading = p.name.endsWith('[bot]') ? `${p.name} · бот` : p.name;
+    const heading = p.name.endsWith('[bot]') ? `${p.name} · bot` : p.name;
     const lines = [`*${escape(heading)}*`];
-    for (const [key, label] of [['waiting', 'Ждут моего ревью'], ['authored', 'Мои открытые PR'], ['reviewed', 'Мои ревью за период'], ['merged', 'Мои влитые PR'], ['completed', 'Закрытые задачи']]) {
+    for (const [key, label] of [['waiting', 'Awaiting my review'], ['authored', 'My open PRs'], ['reviewed', 'My reviews this period'], ['merged', 'My merged PRs'], ['completed', 'Completed issues']]) {
       if (!p[key].length) continue;
       lines.push(`*${label} · ${p[key].length}*`);
       if (key === 'merged') {
@@ -199,15 +199,15 @@ export function render(config, { prs, open, issues, reviewActivity }) {
       if (line.length > 2800) throw new Error('One report item exceeds Slack section limit');
       if (chunk.length + line.length + 1 > 2800) {
         blocks.push({ type: 'section', text: { type: 'mrkdwn', text: chunk } });
-        chunk = `*${escape(heading)} · продолжение*\n`;
+        chunk = `*${escape(heading)} · continued*\n`;
       }
       chunk += `${chunk ? '\n' : ''}${line}`;
     }
     if (chunk) blocks.push({ type: 'section', text: { type: 'mrkdwn', text: chunk } });
   }
   if (!people.size) {
-    blocks.push({ type: 'section', text: { type: 'plain_text', text: 'Нет открытых PR и завершённой работы за период.' } });
-    textParts.push('Нет открытых PR и завершённой работы за период.');
+    blocks.push({ type: 'section', text: { type: 'plain_text', text: 'No open PRs or completed work for this period.' } });
+    textParts.push('No open PRs or completed work for this period.');
   }
   const text = textParts.join('\n\n');
   if (text.length > 35000 || blocks.length > 50 || blocks.some(b => b.type === 'section' && b.text.text.length > 3000)) throw new Error('Update exceeds Slack message limits; reduce report scope');

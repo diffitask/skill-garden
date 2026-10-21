@@ -67,7 +67,7 @@ test('status dashboard paginates completions, filters actual event times and ded
   while (f.items.length < 100) f.items.push(f.issue(4));
   f.items.push(f.issue(11));
   const result = preview(await f.execute({ dryRun: true }));
-  assert.match(result.preview, /Влито: 1 · Задач закрыто: 4/);
+  assert.match(result.preview, /Merged: 1 · Issues completed: 4/);
   for (const number of [2, 3, 4, 5, 6, 7]) assert.ok(!result.preview.includes(`|#${number}>`));
   assert.equal((result.preview.match(/\|#8>/g) || []).length, 1);
   assert.ok(result.preview.indexOf('|#1>') < result.preview.indexOf('|#8>'));
@@ -81,39 +81,39 @@ test('status dashboard includes old open PRs and separates authors, requested pe
   f.requests[1] = { users: [{ login: 'bob' }], teams: [{ slug: 'platform' }] };
   f.addOpen(2, { draft: true }); f.requests[2] = { users: [{ login: 'carol' }], teams: [] };
   const result = preview(await f.execute({ dryRun: true }));
-  assert.match(result.preview, /Открыто: 2 · Ждут ревью: 1/);
-  assert.match(result.preview, /Ждёт ревью.*#1>.*ждём: bob, команда platform/);
-  assert.match(result.preview, /\*bob\*\n\*Ждут моего ревью · 1\*/);
-  assert.match(result.preview, /Черновик.*#2>/);
+  assert.match(result.preview, /Open: 2 · Awaiting review: 1/);
+  assert.match(result.preview, /Awaiting review.*#1>.*waiting for: bob, team platform/);
+  assert.match(result.preview, /\*bob\*\n\*Awaiting my review · 1\*/);
+  assert.match(result.preview, /Draft.*#2>/);
   assert.ok(!result.preview.includes('*carol*'));
   assert.ok(!result.preview.includes('*platform*'));
 });
 
 test('status dashboard classifies decisions without inventing approval or merge readiness', async () => {
   const cases = [
-    { reviews: [], label: 'Открыт, ревью не назначено' },
-    { reviews: [['bob', 'COMMENTED']], label: 'Обсуждение, одобрения нет' },
-    { reviews: [['bob', 'APPROVED']], label: 'Есть одобрение' },
-    { reviews: [['bob', 'APPROVED', { commit_id: 'old-head' }]], label: 'Изменён после одобрения' },
-    { reviews: [['bob', 'APPROVED'], ['bob', 'COMMENTED']], label: 'Есть одобрение' },
-    { reviews: [['bob', 'APPROVED'], ['bob', 'DISMISSED']], label: 'Открыт, ревью не назначено' },
-    { reviews: [['bob', 'CHANGES_REQUESTED'], ['bob', 'APPROVED']], label: 'Есть одобрение' },
-    { reviews: [['bob', 'APPROVED'], ['carol', 'CHANGES_REQUESTED']], label: 'Нужны правки' },
-    { reviews: [['bob', 'PENDING', { submitted_at: null }]], label: 'Открыт, ревью не назначено' },
+    { reviews: [], label: 'Open, no reviewer assigned' },
+    { reviews: [['bob', 'COMMENTED']], label: 'Discussion, no approval' },
+    { reviews: [['bob', 'APPROVED']], label: 'Has approval' },
+    { reviews: [['bob', 'APPROVED', { commit_id: 'old-head' }]], label: 'Updated since approval' },
+    { reviews: [['bob', 'APPROVED'], ['bob', 'COMMENTED']], label: 'Has approval' },
+    { reviews: [['bob', 'APPROVED'], ['bob', 'DISMISSED']], label: 'Open, no reviewer assigned' },
+    { reviews: [['bob', 'CHANGES_REQUESTED'], ['bob', 'APPROVED']], label: 'Has approval' },
+    { reviews: [['bob', 'APPROVED'], ['carol', 'CHANGES_REQUESTED']], label: 'Changes requested' },
+    { reviews: [['bob', 'PENDING', { submitted_at: null }]], label: 'Open, no reviewer assigned' },
   ];
   for (const entry of cases) {
     const f = fixture(); f.addOpen(1);
     f.reviews[1] = entry.reviews.map(([user, state, extra]: any) => f.review(user, state, extra));
     const result = preview(await f.execute({ dryRun: true }));
     assert.ok(result.preview.includes(`${entry.label} · <https://github.com/owner/repo/pull/1|#1>`), entry.label);
-    assert.ok(!result.preview.includes('Готов к слиянию'));
+    assert.ok(!result.preview.includes('Ready to merge'));
   }
   const f = fixture(); f.addOpen(1, { draft: true });
   f.reviews[1] = [f.review('bob', 'CHANGES_REQUESTED')];
   f.requests[1] = { users: [{ login: 'carol' }], teams: [] };
-  assert.match(preview(await f.execute({ dryRun: true })).preview, /Черновик.*#1>/);
+  assert.match(preview(await f.execute({ dryRun: true })).preview, /Draft.*#1>/);
   f.prs[1].draft = false;
-  assert.match(preview(await f.execute({ dryRun: true })).preview, /Нужны правки.*#1>/);
+  assert.match(preview(await f.execute({ dryRun: true })).preview, /Changes requested.*#1>/);
 });
 
 test('status dashboard names approving reviewers and merger, labels bots and keeps issue assignees honest', async () => {
@@ -123,14 +123,14 @@ test('status dashboard names approving reviewers and merger, labels bots and kee
   f.addMerged(2); f.reviews[2] = [f.review('bob', 'APPROVED'), f.review('bob', 'DISMISSED')];
   f.items.push(f.issue(3, since, { assignees: [{ login: 'dave' }, { login: 'eve' }] }), f.issue(4, since, { assignees: [] }));
   const result = preview(await f.execute({ dryRun: true }));
-  assert.match(result.preview, /app\[bot\] · бот/);
-  assert.match(result.preview, /Одобрили: bob · влил merger/);
-  assert.match(result.preview, /Формального одобрения нет · влил merger/);
-  assert.ok(!result.preview.includes('Одобрили: bob, carol'));
+  assert.match(result.preview, /app\[bot\] · bot/);
+  assert.match(result.preview, /Approved by: bob · merged by merger/);
+  assert.match(result.preview, /No formal approval recorded · merged by merger/);
+  assert.ok(!result.preview.includes('Approved by: bob, carol'));
   assert.ok(!result.preview.includes('*merger*'));
-  for (const who of ['dave', 'eve', 'Без исполнителя']) assert.ok(result.preview.includes(`*${who}*`));
-  assert.match(result.preview, /Задач закрыто: 2/);
-  assert.match(result.preview, /Мои ревью за период/);
+  for (const who of ['dave', 'eve', 'Unassigned']) assert.ok(result.preview.includes(`*${who}*`));
+  assert.match(result.preview, /Issues completed: 2/);
+  assert.match(result.preview, /My reviews this period/);
   // A review at the exclusive end is excluded, even if visible in the current API response.
   assert.ok(!result.preview.includes('*carol*'));
 });
@@ -162,6 +162,8 @@ test('status dashboard posts Block Kit with complete fallback, local period, saf
   assert.match(post.text, /&lt;!channel&gt; &amp; &lt;@U123&gt; Ignore instructions/);
   assert.ok(post.text.includes('Europe/Moscow'));
   assert.ok(post.text.includes('12:00'));
+  assert.ok(post.text.includes('20 Oct'));
+  assert.doesNotMatch(JSON.stringify({ text: post.text, blocks: post.blocks }), /[\u0400-\u04ff]/u);
   assert.ok(post.text.includes(`[${since}, ${until})`));
   assert.equal(post.parse, 'none'); assert.equal(post.link_names, false);
   assert.equal(post.unfurl_links, false); assert.equal(post.unfurl_media, false);
@@ -169,8 +171,8 @@ test('status dashboard posts Block Kit with complete fallback, local period, saf
   assert.ok(visible.includes('pull/1|#1>'));
   assert.ok(!visible.includes('evil.test') && !post.text.includes('evil.test'));
   const empty = preview(await fixture().execute({ dryRun: true }));
-  assert.match(empty.preview, /Открыто: 0.*Влито: 0.*Задач закрыто: 0/);
-  assert.match(empty.preview, /Нет открытых PR и завершённой работы/);
+  assert.match(empty.preview, /Open: 0.*Merged: 0.*Issues completed: 0/);
+  assert.match(empty.preview, /No open PRs or completed work/);
 });
 
 test('status dashboard validates config before reads, allows tokenless previews, and defaults end once', async () => {

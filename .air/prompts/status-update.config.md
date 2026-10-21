@@ -7,6 +7,7 @@ Activation: NOT CREATED. This session has no Air automation creation/editing too
 - Repository: `diffitask/ai-workshop-2026`; trusted default branch with this skill available.
 - Prompt: `Follow instructions from .agents/skills/status-update/SKILL.md.`
 - Trigger: the user will configure the schedule in Air. Reporting timezone: `Europe/Moscow`. Manual runs use explicit start/end timestamps.
+- Report language: English for all generated Slack blocks, statuses, labels, dates and text fallback, regardless of conversation language. Dates use `en-GB`; the reporting timezone stays `Europe/Moscow`.
 - Runtime: Node.js >=24, authenticated GitHub CLI, network access to GitHub and Slack.
 - Git output: no repository changes. Posting the requested status message to the configured private Slack channel is explicitly authorized.
 - Secret: `SLACK_BOT_TOKEN` in the automation environment. Present in the current interactive environment; not evidence that a future automation has access. Never copy its value to this record.
@@ -42,3 +43,9 @@ In Air project → Automations, create the named automation with the prompt abov
 - All 99 tests passed, including 12 status-dashboard integration cases; TypeScript and skill validation passed. Slack confirmed the live update. Current schema uses full `text` plus `blocks`.
 - On activation, the next completion window starts at the latest confirmed end, `2026-10-21T11:38:19.361Z`. Keep `STATUS_UPDATE_MESSAGE_TS` unset for recurring runs so each creates a new status update. Only an explicitly requested edit supplies the target timestamp.
 - Schedule/activation remain user-managed. This manual edit is not evidence of a live scheduled automation.
+
+## English report update — 2026-10-21
+
+- Updated the same Slack message (`C0CAR2WK43V`, timestamp `1792582203.491649`) with English headings, statuses, labels, empty states, dates and fallback text. Slack confirmed `chat.update`; the reporting interval and Moscow timezone were preserved.
+- English is required by the skill and renderer for future runs regardless of the conversation language. Source GitHub titles and logins remain intact.
+- All 99 tests, TypeScript checks and skill validation passed.
