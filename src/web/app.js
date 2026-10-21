@@ -1,3 +1,5 @@
+import { renderSkillDocument, copyMarkdown } from './document.js';
+
 const form = document.querySelector('#repository-form');
 const input = document.querySelector('#repository');
 const button = document.querySelector('#scan');
@@ -14,6 +16,62 @@ const detail = document.querySelector('#detail');
 let scanData = null;
 let selectedSkill = null;
 let skillButtons = new Map();
+const copySkill = document.querySelector('#copy-skill');
+const copyStatus = document.querySelector('#copy-status');
+const documentContent = document.querySelector('#document-content');
+let documentVersion = 0;
+let copyFeedbackTimer = null;
+
+function showDocumentView(markdown) {
+  documentContent.hidden = markdown;
+  document.querySelector('#content').hidden = !markdown;
+  document.querySelector('#read-document').setAttribute('aria-pressed', String(!markdown));
+  document.querySelector('#read-markdown').setAttribute('aria-pressed', String(markdown));
+}
+
+function resetDocumentControls() {
+  documentVersion++;
+  clearTimeout(copyFeedbackTimer);
+  copySkill.textContent = 'Copy skill';
+  copySkill.disabled = !selectedSkill;
+  copyStatus.textContent = '';
+  showDocumentView(false);
+}
+
+document.querySelector('#read-document').addEventListener('click', () => showDocumentView(false));
+document.querySelector('#read-markdown').addEventListener('click', () => showDocumentView(true));
+copySkill.addEventListener('click', async () => {
+  if (!selectedSkill) return;
+  const version = documentVersion;
+  const original = selectedSkill.content;
+  clearTimeout(copyFeedbackTimer);
+  copyStatus.textContent = '';
+  copySkill.textContent = 'Copy skill';
+  copySkill.disabled = true;
+  try {
+    await copyMarkdown(original);
+    if (version !== documentVersion) return;
+    copySkill.textContent = 'Copied!';
+    copyStatus.textContent = 'Original Markdown copied.';
+    copyFeedbackTimer = setTimeout(() => {
+      copySkill.textContent = 'Copy skill';
+      copyStatus.textContent = '';
+    }, 2500);
+  } catch {
+    if (version !== documentVersion) return;
+    showDocumentView(true);
+    const source = document.querySelector('#content');
+    source.focus();
+    const range = document.createRange();
+    range.selectNodeContents(source);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    copyStatus.textContent = 'Copy unavailable. Markdown selected — press Ctrl+C or ⌘C to copy.';
+  } finally {
+    if (version === documentVersion) copySkill.disabled = false;
+  }
+});
 
 filterInput.addEventListener('input', () => { if (scanData) renderSkills(); });
 const clusterLevel = document.querySelector('#cluster-level');
@@ -41,17 +99,21 @@ function selectSkill(skill, item) {
   detail.hidden = false;
   if (selectedSkill === skill) return;
   selectedSkill = skill;
+  resetDocumentControls();
   document.querySelector('#skill-name').textContent = skill.name;
   document.querySelector('#skill-repository').textContent = skill.repository;
   renderDescription(skill.description);
   document.querySelector('#full-document').open = false;
   document.querySelector('#path').textContent = skill.path;
   document.querySelector('#content').textContent = skill.content;
+  renderSkillDocument(documentContent, skill.content, skill.link);
   document.querySelector('#source').href = skill.link;
 }
 
 function clearSelection() {
   selectedSkill = null;
+  resetDocumentControls();
+  documentContent.replaceChildren();
   detail.hidden = true;
   for (const id of ['skill-name', 'skill-repository', 'description', 'path', 'content']) document.getElementById(id).replaceChildren();
   document.querySelector('#source').removeAttribute('href');

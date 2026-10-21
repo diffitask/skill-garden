@@ -1,13 +1,13 @@
 # Local web view
 - `npm start` serves Skill Atlas at `http://127.0.0.1:3000`; `PORT` overrides the port.
 - Enter a GitHub repository URL and submit to scan its default branch using the existing scanner. `GITHUB_TOKEN` stays on the server.
-- Show the repository, skill count, and skills sorted by name with descriptions. Select the first skill initially; selecting another shows its name, description, path, full original SKILL.md as plain text, and a GitHub link pinned to the scanned commit.
+- Show the repository, skill count, and skills sorted by name with descriptions. Select the first skill initially; selecting another shows its name, description, path, full SKILL.md as a formatted document with its original Markdown available, and a GitHub link pinned to the scanned commit.
 - Reuse file reads from the scan to show contents without fetching each file again. Store nothing on disk.
 - Show progress while loading and prevent duplicate submissions. Clear old results on a new scan.
 - Show an explicit empty state for no skills, scan warnings, and clear errors for invalid URLs, unavailable repositories, or GitHub rate limits. A failed scan can be retried.
 - Display a decorative pink flower beside Skill Atlas in the header, embedded in both views and hidden from assistive technology.
 - Both views have a sparse, static background of soft pastel flowers and leaves, embedded without external assets. Keep it behind the content, hidden from assistive technology, and unable to intercept clicks or keyboard focus; it must not add horizontal scrolling on narrow screens.
-- Serve the page, script, and stylesheet locally. Repository text is displayed as text, never executable markup. Support narrow screens and keyboard navigation.
+- Serve the page, script, and stylesheet locally. Repository descriptions stay plain text; document Markdown is formatted safely, with raw HTML displayed literally and never executed. Support narrow screens and keyboard navigation.
 - Present the interface as a field guide: numbered Discover, Connect, and Understand sections,
   with embedded decorative source, connection, and reading illustrations hidden from assistive
   technology. Keep guidance legible and section surfaces opaque over the floral background.
@@ -102,6 +102,22 @@
 - Preserve the original wording, version numbers, and every sentence. Recognize a caution clause after a semicolon (for example, “for older 0.x versions”) without inventing requirements or summaries. Unrecognized prose stays in What it does / Details.
 - Use larger text and a highlighted background for What it does, separate cards for usage and cautions, and a single-column layout on narrow screens. Render all description content as plain text.
 - Put the unmodified document and path in an expandable Full SKILL.md section, collapsed initially and when changing skills. Missing descriptions show an explicit fallback pointing to the full document.
+- Full SKILL.md defaults to a readable Document view with headings, emphasis, nested ordered and
+  unordered lists, quotes, links, fenced/inline code, and horizontally scrollable tables.
+  Leading YAML front matter is preserved in a separate collapsed Skill metadata disclosure.
+  A Markdown view shows the exact original text, including whitespace and metadata; switching
+  views does not change selection or trigger any scan or fetch. Changing skills resets to Document.
+- Bundle the Markdown renderer into both views without CDN dependencies. Disable raw HTML;
+  script markup stays literal. Reject executable/data URLs; resolve relative links against the
+  skill's commit-pinned GitHub path, and keep document heading anchors inside the current page.
+  Images become labeled links instead of loading remote resources. Document content cannot
+  replace page elements, inject styles/scripts, or trigger automatic external requests.
+- Provide a keyboard-accessible Copy skill button that copies the entire original Markdown,
+  including front matter, rather than formatted text. Show Copied! and an accessible short
+  confirmation, then reset the label. Support the Clipboard API and a legacy copy fallback for
+  portable files. If both fail, reveal and select the Markdown with clear manual-copy guidance.
+  Skill changes/new scans clear copy feedback; late clipboard promises never mark a different
+  skill as copied. Hide/clear both views with no selection. Reader/toolbars fit 320px screens.
 
 ## Organizations in both views
 - The existing input accepts a GitHub repository URL or organization URL and explains both.

@@ -9,6 +9,7 @@ import { scanTarget } from './core/target.ts';
 import { scanWithContents, withClusters } from './core/view.ts';
 import { aiClusterSkills, type AiSkill, type AskModel } from './core/ai-cluster.ts';
 import { askClaude } from './claude.ts';
+import { browserApp } from './web/bundle.ts';
 
 type Options = {
   open?: (input: string) => Promise<Source>;
@@ -109,7 +110,7 @@ export function createWebServer(options: Options = {}) {
       }
       const asset = assets.get(url.pathname);
       if (!asset) { response.writeHead(404).end('Not found'); return; }
-      const body = await readFile(new URL(`./web/${asset[0]}`, import.meta.url));
+      const body = url.pathname === '/app.js' ? await browserApp() : await readFile(new URL(`./web/${asset[0]}`, import.meta.url));
       response.writeHead(200, { 'Content-Type': asset[1] }).end(body);
     } catch (error) {
       response.writeHead(error instanceof AtlasError ? 502 : 500, { 'Content-Type': 'application/json' });

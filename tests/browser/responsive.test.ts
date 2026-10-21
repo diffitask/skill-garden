@@ -101,8 +101,8 @@ for (const variant of ['server', 'portable'] as const) {
     assert.equal(await page.locator('.summary-block h3 .icon[aria-hidden="true"]').count(), 4);
     await page.locator('#full-document > summary').focus();
     await page.keyboard.press('Enter');
-    assert.equal(await page.locator('#content').isVisible(), true);
-    assert.match(await page.locator('#content').textContent() ?? '', /Original build instructions/);
+    assert.equal(await page.locator('#document-content').isVisible(), true);
+    assert.match(await page.locator('#document-content').textContent() ?? '', /Original build instructions/);
     if (variant === 'portable') {
       assert.equal(await page.locator('#github-token').isVisible(), true);
       assert.equal(await page.locator('#ai-helper-url').isVisible(), false);

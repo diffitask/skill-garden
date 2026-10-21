@@ -134,8 +134,14 @@
           <div id="description" aria-label="Skill summary"></div>
           <details id="full-document">
             <summary><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-source"/></svg>Full SKILL.md <span>Original instructions</span></summary>
+            <div class="document-toolbar">
+              <div class="document-views" role="group" aria-label="Document view"><button id="read-document" type="button" aria-pressed="true">Document</button><button id="read-markdown" type="button" aria-pressed="false">Markdown</button></div>
+              <button id="copy-skill" type="button" disabled>Copy skill</button>
+            </div>
+            <p id="copy-status" role="status" aria-live="polite"></p>
             <p id="path"></p>
-            <pre id="content" tabindex="0" aria-label="SKILL.md contents"></pre>
+            <div id="document-content" class="markdown-document" role="region" aria-label="Formatted SKILL.md"></div>
+            <pre id="content" tabindex="0" aria-label="Original SKILL.md Markdown" hidden></pre>
           </details>
         </article>
       </div>
