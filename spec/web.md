@@ -19,6 +19,12 @@
   all skills and selects the first if selection was cleared. Tab/Enter and Arrow Up/Down,
   Home/End navigation work with the matching list. A repository with no skills retains its
   distinct No skills found state.
+- Both views show a **Skill clusters** section above the skill list (see *clusters* in
+  [analysis.md](analysis.md)), with the cluster count. Each cluster card shows its label words
+  and its member skills as buttons; selecting one selects that skill in the list, like a click
+  there. The filter limits clusters to matching members and hides clusters without any;
+  computed once per scan, never rescanning. Without clusters, show No skills share enough words
+  to form a cluster. Show how many shown skills are not in a cluster. Hidden with no matches.
 
 ## Portable page
 - `npm run build:web` produces a self-contained `skill-atlas.html` to open directly in a browser. No server, port forwarding, CDN scripts, or package installation is needed to use the generated file.

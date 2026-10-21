@@ -33,6 +33,13 @@
       <div class="results-heading"><h2 id="repo-name"></h2><span id="count" class="badge" role="status" aria-live="polite"></span></div>
       <div class="skill-filter"><label for="filter-skills">Filter skills</label><input id="filter-skills" type="search" autocomplete="off" spellcheck="false" aria-controls="skills" aria-describedby="filter-help"><p id="filter-help" class="hint">Match every word in the skill name or description.</p></div>
       <p id="no-matches" role="status" hidden>No skills match your filter</p>
+      <section id="clusters" aria-labelledby="clusters-title">
+        <div class="clusters-heading"><h3 id="clusters-title">Skill clusters</h3><span id="cluster-count" class="badge"></span></div>
+        <p class="hint">Skills that share at least two significant words in their names and descriptions. Select a skill to open it.</p>
+        <div id="cluster-list"></div>
+        <p id="no-clusters" hidden>No skills share enough words to form a cluster.</p>
+        <p id="unclustered" class="hint"></p>
+      </section>
       <div class="workspace">
         <nav id="skills" aria-label="Skills"></nav>
         <article id="detail">

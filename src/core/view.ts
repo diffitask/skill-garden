@@ -1,3 +1,4 @@
+import { clusterSkills, type Clustering } from './cluster.ts';
 import { fileLink, skillLink } from './model.ts';
 import { scan, type Source } from './scan.ts';
 
@@ -12,4 +13,9 @@ export async function scanWithContents(source: Source) {
   return { ...result, testDataLinks: result.testData.map((path) => ({ path, link: fileLink(result.repository, path) })), skills: result.skills.map((skill) => ({
     ...skill, link: skillLink(result.repository, skill), content: contents.get(skill.path),
   })) };
+}
+
+/** Add shared-word clusters of every skill in the result: one repository or a whole organization. */
+export function withClusters<T extends { skills: { id: string; name: string; description: string }[] }>(result: T): T & { clustering: Clustering } {
+  return { ...result, clustering: clusterSkills(result.skills) };
 }

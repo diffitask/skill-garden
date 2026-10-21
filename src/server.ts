@@ -5,7 +5,7 @@ import { AtlasError } from './core/errors.ts';
 import { openGitHub, parseGitHubUrl, parseOrganizationUrl, type GitHubOptions } from './core/github.ts';
 import type { Source } from './core/scan.ts';
 import { scanTarget } from './core/target.ts';
-import { scanWithContents } from './core/view.ts';
+import { scanWithContents, withClusters } from './core/view.ts';
 
 type Options = { open?: (input: string) => Promise<Source>; github?: GitHubOptions };
 
@@ -34,7 +34,7 @@ export function createWebServer(options: Options = {}) {
           response.end(JSON.stringify({ error: 'Enter a GitHub repository URL or organization URL, such as https://github.com/owner/repository or https://github.com/organization.' }));
           return;
         }
-        const result = await scanTarget(input, open, github, scanWithContents);
+        const result = withClusters(await scanTarget(input, open, github, scanWithContents));
         response.writeHead(200, { 'Content-Type': 'application/json' });
         response.end(JSON.stringify(result));
         return;

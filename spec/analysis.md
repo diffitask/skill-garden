@@ -41,6 +41,16 @@ Skill: id = `repo:path`, name, description, commit, copies, in an agent folder (
   query shows all skills; a missing description is empty. Never search document contents,
   paths, copies, or test data. Preserve order, classification, deduplication, pinned links,
   test-data links, and scan warnings; filtering does not change which files are scanned.
+- **Clusters** group completed scan results by shared words. A skill's *significant words*
+  come from its name and full description: lowercase, split at anything but letters and
+  digits, at least three characters, no numbers, no common stop words (including `skill`,
+  `agent`, `use`); a trailing plural `s` is removed (`reviews` → `review`, not `process`).
+  Two skills are linked when they share at least two significant words; a cluster is a
+  connected group of two or more linked skills, so links chain. Its label is up to five
+  words shared by at least two members, the most shared first, then alphabetically.
+  Clusters are ordered by size, then label; members keep the scan order. Skills linked to
+  none are *not in a cluster*. An organization clusters all its skills across repositories.
+  Copies and test data are never clustered; clustering reads nothing and changes nothing else.
 - Without a token, a tree too large for one GitHub answer: the files GitHub does list, plus
   `.agents/skills`, `.claude/skills`, `.github/skills` and `agent/skills` at the root in full,
   and a *warning* that skills may be missed
