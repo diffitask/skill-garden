@@ -41,6 +41,21 @@ Skill: id = `repo:path`, name, description, commit, copies, in an agent folder (
   query shows all skills; a missing description is empty. Never search document contents,
   paths, copies, or test data. Preserve order, classification, deduplication, pinned links,
   test-data links, and scan warnings; filtering does not change which files are scanned.
+- **Clusters** group completed scan results by topic. A skill's *terms* are the stems of the
+  words of its name and full description: lowercase, split at anything but letters and digits,
+  at least three characters, no numbers, no stop words (common English words and words such as
+  `skill`, `agent`, `use`, `create`); light suffix rules fold `tests`, `testing`, `tested`.
+  Each skill is a TF-IDF vector: a term weighs `1 + ln(occurrences in the description)`, plus
+  one when the name has it, times `ln((skills + 1) / skills with the term)`, so terms most
+  skills of the result use barely count. Similarity is the cosine of two vectors.
+- Average-linkage agglomerative clustering repeatedly merges the two groups with the highest
+  mean pairwise similarity while it reaches the threshold, so one broad skill cannot chain
+  unrelated groups. Levels: Loose 0.08, Balanced 0.12, Strict 0.2, all from one run of merges.
+  A cluster has two or more skills; its label is up to four terms shared by at least two
+  members, by their total weight, written as most often in the skills. Clusters are ordered by
+  size, then label; members keep the scan order. Other skills are *not in a cluster*. An
+  organization clusters all its skills across repositories. Copies and test data are never
+  clustered; clustering reads nothing and changes nothing else.
 - Without a token, a tree too large for one GitHub answer: the files GitHub does list, plus
   `.agents/skills`, `.claude/skills`, `.github/skills` and `agent/skills` at the root in full,
   and a *warning* that skills may be missed

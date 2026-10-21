@@ -13,8 +13,11 @@ const filterInput = document.querySelector('#filter-skills');
 const detail = document.querySelector('#detail');
 let scanData = null;
 let selectedSkill = null;
+let skillButtons = new Map();
 
 filterInput.addEventListener('input', () => { if (scanData) renderSkills(); });
+const clusterLevel = document.querySelector('#cluster-level');
+clusterLevel.addEventListener('change', () => { if (scanData) renderSkills(); });
 list.addEventListener('keydown', (event) => {
   const items = [...list.querySelectorAll('button')];
   const index = items.indexOf(event.target);
@@ -67,6 +70,7 @@ function renderSkills() {
   const total = scanData.skills.length;
   const shown = [];
   list.replaceChildren();
+  skillButtons = new Map();
   for (const repo of organization ? scanData.repositories : [scanData]) {
     const repoSkills = repo.skills.filter(matches);
     if (organization && (repoSkills.length || !terms.length)) {
@@ -104,15 +108,61 @@ function renderSkills() {
         }
         item.addEventListener('click', () => selectSkill(skill, item));
         list.append(item);
+        skillButtons.set(skill.id, item);
         shown.push(skill);
       }
     }
   }
   document.querySelector('#count').textContent = `${shown.length} of ${total} ${total === 1 ? 'skill' : 'skills'}`;
   document.querySelector('#no-matches').hidden = shown.length !== 0;
+  renderClusters(shown);
   const selectedIndex = Math.max(0, shown.indexOf(selectedSkill));
   if (shown.length) selectSkill(shown[selectedIndex], list.querySelectorAll('button')[selectedIndex]);
   else clearSelection();
+}
+
+/** Shared-word clusters from the scan, limited to the skills the filter shows. */
+function renderClusters(shown) {
+  const container = document.querySelector('#cluster-list');
+  container.replaceChildren();
+  const byId = new Map(shown.map((skill) => [skill.id, skill]));
+  const clustering = scanData.clusterings?.find((level) => level.name === clusterLevel.value) ?? { clusters: [], unclustered: [] };
+  let count = 0;
+  for (const cluster of clustering.clusters) {
+    const members = cluster.skills.map((id) => byId.get(id)).filter(Boolean);
+    if (!members.length) continue;
+    count++;
+    const card = document.createElement('section');
+    card.className = 'cluster';
+    const heading = document.createElement('h4');
+    heading.textContent = cluster.words.join(' · ');
+    const size = document.createElement('span');
+    size.className = 'cluster-size';
+    size.textContent = `${members.length} ${members.length === 1 ? 'skill' : 'skills'}`;
+    heading.append(' ', size);
+    const skills = document.createElement('ul');
+    for (const skill of members) {
+      const item = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = skill.name;
+      if (scanData.organization) button.title = skill.repository;
+      button.addEventListener('click', () => {
+        const target = skillButtons.get(skill.id);
+        selectSkill(skill, target);
+        target.scrollIntoView?.({ block: 'nearest' });
+      });
+      item.append(button);
+      skills.append(item);
+    }
+    card.append(heading, skills);
+    container.append(card);
+  }
+  const alone = clustering.unclustered.filter((id) => byId.has(id)).length;
+  document.querySelector('#cluster-count').textContent = `${count} ${count === 1 ? 'cluster' : 'clusters'}`;
+  document.querySelector('#no-clusters').hidden = count !== 0 || !shown.length;
+  document.querySelector('#unclustered').textContent = alone ? `Not in a cluster: ${alone} ${alone === 1 ? 'skill' : 'skills'}` : '';
+  document.querySelector('#clusters').hidden = !shown.length;
 }
 
 function renderTestData(repositories) {
@@ -153,6 +203,8 @@ form.addEventListener('submit', async (event) => {
   }
   document.querySelector('#source').removeAttribute('href');
   list.replaceChildren();
+  document.querySelector('#cluster-list').replaceChildren();
+  clusterLevel.replaceChildren();
   scanData = null;
   filterInput.value = '';
   clearSelection();
@@ -181,6 +233,9 @@ form.addEventListener('submit', async (event) => {
       return;
     }
     scanData = data;
+    // Smaller repositories share fewer distinctive words, so they start with looser clusters.
+    clusterLevel.replaceChildren(...(data.clusterings ?? []).map((level) => new Option(`${level.name} · ${level.clusters.length} ${level.clusters.length === 1 ? 'cluster' : 'clusters'}`, level.name)));
+    clusterLevel.value = data.skills.length < 50 ? 'Loose' : 'Balanced';
     renderSkills();
     results.hidden = false;
   } catch (error) {
