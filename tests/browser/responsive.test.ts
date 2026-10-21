@@ -78,9 +78,15 @@ for (const variant of ['server', 'portable'] as const) {
     assert.ok(resultBounds && resultBounds.y >= 0 && resultBounds.y < 150, 'A scan brings the results into view');
     assert.equal(await page.locator('#skills button').count(), 2);
     assert.equal(await page.locator('.intro-copy .eyebrow').textContent(), 'A GARDEN OF AI AGENT SKILLS');
-    assert.equal(await page.locator('.intro-copy h1').textContent(), 'Skills, like flowers.');
-    assert.equal(await page.locator('.intro-tagline').textContent(), 'Similar and unique.');
-    assert.equal(await page.locator('.intro-link').textContent(), 'Discover them ↗');
+    assert.equal(await page.locator('.intro-copy h1').textContent(), 'Skills are like flowers.');
+    assert.equal(await page.locator('.intro-tagline').textContent(), 'They bloom everywhere.');
+    assert.deepEqual(await page.locator('.intro-link > span').allTextContents(), ['Discover skills.', 'Find new possibilities. ↗']);
+    const heroType = await page.evaluate(() => {
+      const style = (selector: string) => getComputedStyle(document.querySelector(selector)!);
+      return { heading: parseFloat(style('.intro-copy h1').fontSize), invitation: parseFloat(style('.intro-link').fontSize),
+        bloom: parseFloat(style('.intro-tagline').fontSize), weight: Number(style('.intro-link').fontWeight) };
+    });
+    assert.ok(heroType.heading > heroType.bloom && heroType.invitation > heroType.bloom && heroType.invitation >= 28 && heroType.weight >= 700);
     const mark = page.locator('#skills button').first().locator('.skill-flower');
     const originalMark = await mark.evaluate((el) => el.outerHTML);
     const otherMark = await page.locator('#skills button').nth(1).locator('.skill-flower').evaluate((el) => el.outerHTML);

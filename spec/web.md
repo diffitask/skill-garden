@@ -13,10 +13,12 @@
   technology. Keep guidance legible and section surfaces opaque over the floral background.
   The introductory headline and description explain the purpose: discover agent skills across
   GitHub repositories, find inspiration, and reuse skills in your own work.
-- The English botanical concept is the prominent hero heading “Skills, like flowers.”,
-  followed by the smaller tagline “Similar and unique.” and a “Discover them” invitation.
+- The English botanical concept is the large hero heading “Skills are like flowers.”,
+  followed by the smaller line “They bloom everywhere.” and a prominent bold two-line link:
+  “Discover skills.” / “Find new possibilities.”, which moves to the repository form.
   The eyebrow identifies AI agent skills and the description explains GitHub skill discovery
-  and reuse. Show a self-contained botanical specimen illustration on desktop.
+  and reuse. Both the heading and invitation stay large on mobile; the bloom line is smaller
+  than both. Show a self-contained botanical specimen illustration on desktop.
 - Give every skill a decorative flower derived deterministically from its stable skill ID.
   Repeat exactly the same mark beside its directory name, cluster-member name, and reader
   heading. Marks vary in petal count, shape, and muted color; they never imply inferred skill
