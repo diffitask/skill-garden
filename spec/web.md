@@ -11,6 +11,8 @@
 - Present the interface as a field guide: numbered Discover, Connect, and Understand sections,
   with embedded decorative source, connection, and reading illustrations hidden from assistive
   technology. Keep guidance legible and section surfaces opaque over the floral background.
+  The introductory headline and description explain the purpose: discover agent skills across
+  GitHub repositories, find inspiration, and reuse skills in your own work.
 - Keep Filter skills next to the skill directory, with a distinct selected item and the reader
   beside it on desktop, stacked on mobile. Provide a Browse skills link that skips the clusters.
   After scanning, scroll to results. Selecting a cluster member focuses its skill heading and
