@@ -23,6 +23,12 @@ To browse skills locally, run `npm start` and open http://127.0.0.1:3000.
 Enter a GitHub repository or organization URL, then select a skill to read its full SKILL.md.
 Set `PORT` to change the port, and optionally `GITHUB_TOKEN` for private repositories or higher API limits.
 
+Above the skill list, **Skill clusters** groups skills by topic: *Without AI* by distinctive shared
+words, and, in the local server view, *With AI* by Claude Haiku 4.5 when you press **Cluster with AI**.
+That runs the Claude Code CLI headless (`claude -p`, no tools) on the server, so install Claude Code
+and log in first; set `CLAUDE_BIN` if `claude` is not on the `PATH`. Skill names and descriptions
+are sent to Claude.
+
 For a version that needs no server or port setup, open **skill-atlas.html** directly
 in your browser. It browses public repositories and organizations and needs an internet connection.
 Regenerate the file with `npm run build:web` after changing the UI or scanner.

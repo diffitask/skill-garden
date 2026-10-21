@@ -1,4 +1,4 @@
-import { createServer } from 'node:http';
+import { createServer, type IncomingMessage } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { AtlasError } from './core/errors.ts';
@@ -6,12 +6,23 @@ import { openGitHub, parseGitHubUrl, parseOrganizationUrl, type GitHubOptions } 
 import type { Source } from './core/scan.ts';
 import { scanTarget } from './core/target.ts';
 import { scanWithContents, withClusters } from './core/view.ts';
+import { aiClusterSkills, type AiSkill, type AskModel } from './core/ai-cluster.ts';
+import { askClaude } from './claude.ts';
 
-type Options = { open?: (input: string) => Promise<Source>; github?: GitHubOptions };
+type Options = {
+  open?: (input: string) => Promise<Source>;
+  github?: GitHubOptions;
+  /** The model for AI clusters; `claude -p` by default. */
+  ask?: AskModel;
+};
+
+/** The largest AI clustering request body: names and descriptions of every skill. */
+const BODY_LIMIT = 2_000_000;
 
 export function createWebServer(options: Options = {}) {
   const github = options.github ?? { fetch, token: process.env.GITHUB_TOKEN || undefined };
   const open = options.open ?? ((input: string) => openGitHub(input, github));
+  const ask = options.ask ?? askClaude();
   const assets = new Map([
     ['/', ['index.html', 'text/html; charset=utf-8']],
     ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
@@ -23,6 +34,19 @@ export function createWebServer(options: Options = {}) {
     response.setHeader('Cache-Control', 'no-store');
     const url = new URL(request.url ?? '/', 'http://localhost');
     try {
+      if (url.pathname === '/api/ai-clusters') {
+        if (request.method !== 'POST') { response.writeHead(405, { Allow: 'POST' }).end(); return; }
+        const skills = await readSkills(request);
+        if (!skills) {
+          response.writeHead(400, { 'Content-Type': 'application/json' });
+          response.end(JSON.stringify({ error: 'Send the skills to cluster as JSON: {"skills": [{"id", "name", "description"}]}.' }));
+          return;
+        }
+        const result = await aiClusterSkills(skills, ask);
+        response.writeHead(200, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify(result));
+        return;
+      }
       if (request.method !== 'GET') {
         response.writeHead(405, { Allow: 'GET' }).end();
         return;
@@ -48,6 +72,25 @@ export function createWebServer(options: Options = {}) {
       response.end(JSON.stringify({ error: error instanceof AtlasError ? error.message : 'Unable to scan the repository. Please try again.' }));
     }
   });
+}
+
+/** The skills of an AI clustering request, or undefined when the body is not a valid request. */
+async function readSkills(request: IncomingMessage): Promise<AiSkill[] | undefined> {
+  if (!/^application\/json\b/i.test(request.headers['content-type'] ?? '')) return undefined;
+  let body = '';
+  for await (const chunk of request) {
+    body += chunk;
+    if (body.length > BODY_LIMIT) return undefined;
+  }
+  let skills: unknown;
+  try {
+    skills = (JSON.parse(body) as { skills?: unknown })?.skills;
+  } catch {
+    return undefined;
+  }
+  const valid = Array.isArray(skills) && skills.every((skill) => skill && typeof skill.id === 'string'
+    && typeof skill.name === 'string' && typeof (skill.description ?? '') === 'string');
+  return valid ? (skills as AiSkill[]).map(({ id, name, description }) => ({ id, name, description: description ?? '' })) : undefined;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

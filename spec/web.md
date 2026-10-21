@@ -27,6 +27,22 @@
   hides clusters without any. Clusters are computed once per scan; changing the level or filter
   never rescans. Without clusters, show No skills share enough words to form a cluster. Show
   how many shown skills are not in a cluster. Hidden with no matches; reset on a new scan.
+- **AI clusters**: beside the word clusters (Without AI, left), a With AI panel (right; stacked on
+  narrow screens) clusters the shown skills with Claude Haiku 4.5 (`claude-haiku-4-5`) on request:
+  a Cluster with AI button naming the skill count, explaining that names and descriptions are sent
+  to Claude. The local server runs the Claude Code CLI in headless mode (`claude -p`, or
+  `CLAUDE_BIN`) with structured JSON output, a dedicated system prompt, no tools, no session
+  persistence, the prompt on stdin and no shell; at most 400 skills, descriptions cut to 400
+  characters; skills are keyed `s1`, `s2`… in the prompt. `POST /api/ai-clusters` takes
+  `{"skills": [{id, name, description}]}` as JSON (other content types, malformed or oversized
+  bodies: 400; other methods: 405).
+- The model's answer is validated, never trusted: unknown keys are ignored, a skill stays in its
+  first cluster, clusters need two skills, labels are plain text of at most 60 characters. Order
+  like the word clusters; the rest are not in a cluster. Show progress and disable the button
+  while waiting; show a missing CLI, a login error, a timeout, or a malformed answer as an alert in
+  the panel, retryable. The filter limits shown AI clusters as for word clusters. A new scan
+  discards AI clusters and ignores a late answer. The portable page has no CLI: its button is
+  disabled and explains that AI clustering runs in the local server view.
 
 ## Portable page
 - `npm run build:web` produces a self-contained `skill-atlas.html` to open directly in a browser. No server, port forwarding, CDN scripts, or package installation is needed to use the generated file.
