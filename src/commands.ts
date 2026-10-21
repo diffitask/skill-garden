@@ -3,11 +3,15 @@
 import { AtlasError } from './core/errors.ts';
 import { filterSkills } from './core/filter.ts';
 import { fileLink, skillLink, type Repository, type Skill } from './core/model.ts';
-import { scan, type Source } from './core/scan.ts';
+import type { Source } from './core/scan.ts';
+import type { GitHubOptions } from './core/github.ts';
+import { scanTarget } from './core/target.ts';
 
 export type Context = {
-  /** Opens what the user asked to scan. */
+  /** Opens a single repository URL or local directory. */
   open(input: string): Promise<Source>;
+  /** GitHub transport and credentials for organization discovery and scans. */
+  github?: GitHubOptions;
   print(text: string): void;
   /** Errors and warnings. */
   error(text: string): void;
@@ -16,14 +20,15 @@ export type Context = {
 const usage = `Usage: skill-atlas <command>
 
   scan <GitHub URL | directory> [--filter "words"]
-                                  find SKILL.md files, optionally matching name and description
+                                  find skills in a repository, organization, or directory,
+                                  optionally matching name and description
   help                            show this help`;
 
 /** Runs one command; returns its exit code. */
 export async function run(args: string[], context: Context): Promise<number> {
   const [command = 'help', ...rest] = args;
   try {
-    if (command === 'scan') await scanCommand(rest, context);
+    if (command === 'scan') return await scanCommand(rest, context);
     else if (command === 'help') context.print(usage);
     else throw new AtlasError(`Unknown command: ${command}\n\n${usage}`);
     return 0;
@@ -38,10 +43,22 @@ async function scanCommand(args: string[], context: Context) {
   if (args.length !== 1 && !(args.length === 3 && args[1] === '--filter')) {
     throw new AtlasError('Usage: skill-atlas scan <GitHub URL | directory> [--filter "words"]');
   }
-  const result = await scan(await context.open(args[0]));
-  const skills = filterSkills(result.skills, args[2] ?? '');
-  printRepository(result.repository, skills, result.testData, context, Boolean(args[2]?.trim()));
+  const query = args[2] ?? '';
+  const filtered = Boolean(query.trim());
+  const result = await scanTarget(args[0], context.open, context.github);
+  if ('organization' in result) {
+    const { counts: c } = result;
+    const repositories = result.repositories.map((repo) => ({ ...repo, skills: filterSkills(repo.skills, query) }));
+    const total = repositories.reduce((sum, repo) => sum + repo.skills.length, 0);
+    context.print(`${result.organization.name} · ${count(total)}${result.partial ? ' · PARTIAL RESULTS' : ''}`);
+    context.print(`Repositories: ${c.discovered} discovered, ${c.scanned} successfully scanned, ${c.failed} failed, ${c.skipped} skipped`);
+    for (const repo of repositories) printRepository(repo.repository, repo.skills, repo.testData, context);
+    if (!c.discovered) context.print('No public repositories found.');
+    else if (!result.skills.length) context.print(result.partial ? 'No skills found in the completed scans.' : 'No skills found.');
+    else if (filtered && !total) context.print('No skills match your filter');
+  } else printRepository(result.repository, filterSkills(result.skills, query), result.testData, context, filtered);
   for (const warning of result.warnings) context.error(`warning: ${warning}`);
+  return 'partial' in result && result.partial ? 1 : 0;
 }
 
 /**

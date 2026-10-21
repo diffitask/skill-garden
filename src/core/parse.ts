@@ -27,7 +27,15 @@ export function parseSkill(text: string): ParsedSkill {
   const document = parseDocument(`\n${lines.slice(1, end).join('\n')}`);
   const [error] = document.errors;
   if (error) return fallback(`malformed front matter: ${error.message.split('\n')[0].replace(/:$/, '')}`, body);
-  const data: unknown = document.toJS();
+  let data: unknown;
+  try {
+    // Conversion can reject aliases even when YAML syntax itself is valid.
+    // Keep the library's expansion limit and treat this like malformed metadata.
+    data = document.toJS();
+  } catch (error) {
+    const reason = error instanceof Error ? error.message.split('\n')[0] : 'YAML conversion failed';
+    return fallback(`malformed front matter: ${reason}`, body);
+  }
   if (typeof data !== 'object' || data === null || Array.isArray(data)) {
     return fallback('front matter is not a mapping', body);
   }

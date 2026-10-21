@@ -19,7 +19,7 @@ export async function portableHtml(): Promise<string> {
     .replace('href="/"', 'href="#"')
     .replace('LOCAL EXPLORER', 'REPOSITORY EXPLORER')
     .replace('id="github-access" hidden', 'id="github-access"')
-    .replace('Finds SKILL.md files on the default branch. Set GITHUB_TOKEN when starting the server for private repositories or higher limits.', 'Browse public GitHub repositories. If GitHub limits requests, enter a GitHub token below and try again.')
+    .replace('Finds SKILL.md files on each default branch. Organization scans include public repositories only. Set GITHUB_TOKEN when starting the server for private repositories or higher limits.', 'Browse a public GitHub repository or organization. Organization scans include public repositories only. If GitHub limits requests, enter a GitHub token below and try again.')
     .replace('</body>', () => `<script>${bundled.outputFiles[0].text.replace(/<\/script/gi, '<\\/script')}</script></body>`);
 }
 

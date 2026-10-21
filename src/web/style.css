@@ -5,3 +5,5 @@
 
 .brand-flower{display:block;flex:none}
 .skill-filter{margin-bottom:20px}.skill-filter input{width:100%}
+
+#scan-summary{font-size:14px;line-height:1.7}nav h3{font-size:14px;overflow-wrap:anywhere;margin:18px 8px 10px}nav h4{font-size:12px;margin:14px 8px 6px}#test-data{overflow-wrap:anywhere;font-size:12px}#test-data h3{font-size:13px;margin-top:24px}#skill-repository{font-size:12px;overflow-wrap:anywhere;color:#687663}

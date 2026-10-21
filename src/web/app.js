@@ -11,12 +11,12 @@ const tokenInput = document.querySelector('#github-token');
 const addToken = document.querySelector('#add-token');
 const filterInput = document.querySelector('#filter-skills');
 const detail = document.querySelector('#detail');
-let allSkills = [];
+let scanData = null;
 let selectedSkill = null;
 
-filterInput.addEventListener('input', renderSkills);
+filterInput.addEventListener('input', () => { if (scanData) renderSkills(); });
 list.addEventListener('keydown', (event) => {
-  const items = [...list.children];
+  const items = [...list.querySelectorAll('button')];
   const index = items.indexOf(event.target);
   if (index < 0) return;
   const next = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: items.length - 1 }[event.key];
@@ -33,12 +33,13 @@ addToken.addEventListener('click', () => {
 });
 
 function selectSkill(skill, item) {
-  for (const sibling of list.children) sibling.removeAttribute('aria-current');
+  for (const sibling of list.querySelectorAll('button')) sibling.removeAttribute('aria-current');
   item.setAttribute('aria-current', 'true');
   detail.hidden = false;
   if (selectedSkill === skill) return;
   selectedSkill = skill;
   document.querySelector('#skill-name').textContent = skill.name;
+  document.querySelector('#skill-repository').textContent = skill.repository;
   renderDescription(skill.description);
   document.querySelector('#full-document').open = false;
   document.querySelector('#path').textContent = skill.path;
@@ -49,7 +50,7 @@ function selectSkill(skill, item) {
 function clearSelection() {
   selectedSkill = null;
   detail.hidden = true;
-  for (const id of ['skill-name', 'description', 'path', 'content']) document.getElementById(id).replaceChildren();
+  for (const id of ['skill-name', 'skill-repository', 'description', 'path', 'content']) document.getElementById(id).replaceChildren();
   document.querySelector('#source').removeAttribute('href');
   document.querySelector('#full-document').open = false;
 }
@@ -57,74 +58,137 @@ function clearSelection() {
 function renderSkills() {
   // Same literal, per-field matching as core/filter.ts; never search paths or contents.
   const terms = filterInput.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const skills = allSkills.filter((skill) => {
+  const matches = (skill) => {
     const name = skill.name.toLowerCase();
     const description = (skill.description ?? '').toLowerCase();
     return terms.every((term) => name.includes(term) || description.includes(term));
-  });
-  document.querySelector('#count').textContent = `${skills.length} of ${allSkills.length} ${allSkills.length === 1 ? 'skill' : 'skills'}`;
-  document.querySelector('#no-matches').hidden = skills.length !== 0;
+  };
+  const organization = scanData.organization;
+  const total = scanData.skills.length;
+  const shown = [];
   list.replaceChildren();
-  for (const skill of skills) {
-    const item = document.createElement('button');
-    item.type = 'button';
-    const name = document.createElement('strong');
-    name.textContent = skill.name;
-    const description = document.createElement('span');
-    description.textContent = skill.description || skill.path;
-    item.append(name, description);
-    item.addEventListener('click', () => selectSkill(skill, item));
-    list.append(item);
+  for (const repo of organization ? scanData.repositories : [scanData]) {
+    const repoSkills = repo.skills.filter(matches);
+    if (organization && (repoSkills.length || !terms.length)) {
+      const heading = document.createElement('h3');
+      heading.textContent = `${repo.repository.id} · ${repoSkills.length} skills`;
+      list.append(heading);
+    }
+    const groups = organization ? [
+      ["In agents' folders", repoSkills.filter((skill) => skill.inAgentFolder)],
+      ['Elsewhere', repoSkills.filter((skill) => !skill.inAgentFolder)],
+    ] : [['', repoSkills]];
+    for (const [group, skills] of groups) {
+      if (group && skills.length) {
+        const heading = document.createElement('h4');
+        heading.textContent = `${group} · ${skills.length} ${skills.length === 1 ? 'skill' : 'skills'}`;
+        list.append(heading);
+      }
+      for (const skill of skills) {
+        const item = document.createElement('button');
+        item.type = 'button';
+        const title = document.createElement('strong');
+        title.textContent = skill.name;
+        const description = document.createElement('span');
+        description.textContent = skill.description || skill.path;
+        item.append(title, description);
+        if (organization) {
+          const source = document.createElement('span');
+          source.textContent = skill.repository;
+          item.append(source);
+        }
+        if (skill.copies.length) {
+          const copies = document.createElement('span');
+          copies.textContent = `also in ${skill.copies.join(', ')}`;
+          item.append(copies);
+        }
+        item.addEventListener('click', () => selectSkill(skill, item));
+        list.append(item);
+        shown.push(skill);
+      }
+    }
   }
-  const selectedIndex = Math.max(0, skills.indexOf(selectedSkill));
-  if (skills.length) selectSkill(skills[selectedIndex], list.children[selectedIndex]);
+  document.querySelector('#count').textContent = `${shown.length} of ${total} ${total === 1 ? 'skill' : 'skills'}`;
+  document.querySelector('#no-matches').hidden = shown.length !== 0;
+  const selectedIndex = Math.max(0, shown.indexOf(selectedSkill));
+  if (shown.length) selectSkill(shown[selectedIndex], list.querySelectorAll('button')[selectedIndex]);
   else clearSelection();
+}
+
+function renderTestData(repositories) {
+  const tests = document.querySelector('#test-data');
+  for (const repo of repositories) {
+    if (!repo.testDataLinks?.length) continue;
+    const heading = document.createElement('h3');
+    heading.textContent = `${repo.repository.id} · Test data, not skills · ${repo.testDataLinks.length} files`;
+    tests.append(heading);
+    for (const file of repo.testDataLinks) {
+      const paragraph = document.createElement('p');
+      const link = document.createElement('a');
+      link.href = file.link;
+      link.textContent = file.path;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      paragraph.append(link);
+      tests.append(paragraph);
+    }
+  }
 }
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
+  if (form.hasAttribute('aria-busy')) return;
   button.disabled = true;
   input.disabled = true;
   form.setAttribute('aria-busy', 'true');
-  status.textContent = 'Scanning the repository and reading its skills…';
+  status.textContent = 'Scanning repositories and reading their skills…';
   errorPanel.hidden = true;
   tokenInput.disabled = true;
   results.hidden = true;
   empty.hidden = true;
   warnings.hidden = true;
+  warnings.textContent = '';
+  for (const selector of ['#repo-name', '#count', '#skill-name', '#skill-repository', '#description', '#path', '#content']) {
+    document.querySelector(selector).replaceChildren();
+  }
+  document.querySelector('#source').removeAttribute('href');
   list.replaceChildren();
-  allSkills = [];
+  scanData = null;
   filterInput.value = '';
   clearSelection();
+  document.querySelector('#scan-summary').textContent = '';
+  document.querySelector('#test-data').replaceChildren();
   try {
     const data = await loadRepository(input.value.trim());
-    document.querySelector('#repo-name').textContent = data.repository.id;
-    allSkills = data.skills;
-    renderSkills();
-    warnings.textContent = data.warnings.join('\n');
+    const organization = data.organization;
+    const name = organization ? organization.name : data.repository.id;
+    document.querySelector('#repo-name').textContent = name;
+    warnings.textContent = data.warnings.map(formatFailure).join('\n');
     warnings.hidden = data.warnings.length === 0;
-    status.textContent = `Scanned ${data.repository.id} at commit ${data.repository.commit.slice(0, 7)}.`;
+    if (organization) {
+      const c = data.counts;
+      document.querySelector('#scan-summary').textContent = `${name} · ${data.skills.length} skills · Repositories: ${c.discovered} discovered, ${c.scanned} successfully scanned, ${c.failed} failed, ${c.skipped} skipped`;
+      status.textContent = data.partial ? `Partial results for ${name}. See repository warnings below.` : `Scanned organization ${name}.`;
+    } else status.textContent = `Scanned ${name} at commit ${data.repository.commit.slice(0, 7)}.`;
+    renderTestData(organization ? data.repositories : [data]);
     if (!data.skills.length) {
       empty.hidden = false;
-      document.querySelector('#empty-title').textContent = 'No skills found.';
-      document.querySelector('#empty-message').textContent = 'This repository has no SKILL.md files. Try another repository.';
+      document.querySelector('#empty-title').textContent = data.partial ? 'No skills available from completed scans.' : 'No skills found.';
+      document.querySelector('#empty-message').textContent = organization
+        ? (data.partial ? 'Some repositories could not be fully scanned. Review the warnings and try again.'
+          : data.counts.discovered ? 'This organization has no skills in its public repositories.' : 'This organization has no public repositories.')
+        : 'This repository has no SKILL.md files. Try another repository.';
       return;
     }
+    scanData = data;
+    renderSkills();
     results.hidden = false;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to scan the repository.';
     const limited = /rate limit/i.test(message);
     const portable = typeof globalThis.skillAtlasScan === 'function';
-    document.querySelector('#error-title').textContent = limited ? 'GitHub request limit reached' : 'Repository scan failed';
-    document.querySelector('#error-message').textContent = limited
-      ? (portable
-        ? (tokenInput.value.trim()
-          ? 'GitHub has temporarily limited requests for this token. Wait for the limit to reset, then try again.'
-          : 'GitHub has temporarily limited requests from your connection. Wait for the limit to reset, or add a GitHub token and try again.')
-        : 'GitHub has temporarily limited requests. Wait for the limit to reset, or restart the server with GITHUB_TOKEN set.')
-      : (portable && /rejected the token/i.test(message)
-        ? 'GitHub rejected this token. Replace or remove it in the GitHub token field, then try again.'
-        : message);
+    document.querySelector('#error-title').textContent = limited ? 'GitHub request limit reached' : 'Repository or organization scan failed';
+    document.querySelector('#error-message').textContent = formatFailure(message);
     addToken.hidden = !portable || !limited || Boolean(tokenInput.value.trim());
     status.textContent = 'Scan failed. See the error below.';
     errorPanel.hidden = false;
@@ -136,6 +200,20 @@ form.addEventListener('submit', async (event) => {
     form.removeAttribute('aria-busy');
   }
 });
+
+function formatFailure(message) {
+  const portable = typeof globalThis.skillAtlasScan === 'function';
+  const guidance = portable
+    ? (tokenInput.value.trim()
+      ? 'GitHub has temporarily limited requests for this token. Wait for the limit to reset, then try again.'
+      : 'GitHub has temporarily limited requests from your connection. Wait for the limit to reset, or add a GitHub token and try again.')
+    : 'GitHub has temporarily limited requests. Wait for the limit to reset, or restart the server with GITHUB_TOKEN set.';
+  if (portable) message = message.replace(/\(GITHUB_TOKEN searches everywhere\)/g, '(some skills may be missed)');
+  return message.replace(/GitHub rate limit reached;.*/i, guidance)
+    .replace(/GitHub rejected the token in GITHUB_TOKEN/g, portable
+      ? 'GitHub rejected this token. Replace or remove it in the GitHub token field, then try again.'
+      : 'GitHub rejected the server token in GITHUB_TOKEN.');
+}
 
 async function loadRepository(repository) {
   // The portable HTML supplies a direct GitHub scanner; the server view uses its API.

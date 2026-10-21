@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { runPublisher } from '../.air/scripts/publish-review.mjs';
+import { runPublisher, publishReview } from '../.air/scripts/publish-review.mjs';
 
 const sha = 'a'.repeat(40);
 const marker = '<!-- air-code-review -->';
-async function publish(env: Record<string, string | undefined> = {}, comments: any[] = [], pr = { state: 'open', head: { sha } }, failWrite = false) {
+async function publish(env: Record<string, string | undefined> = {}, pr = { state: 'open', head: { sha } }, failWrite = false) {
   const calls: { method: string; endpoint: string; body: any }[] = [];
   const reads: string[] = [];
   const result = await runPublisher({
@@ -15,8 +15,7 @@ async function publish(env: Record<string, string | undefined> = {}, comments: a
     if (method === 'GET') {
       reads.push(endpoint);
       if (endpoint === 'repos/owner/repo/pulls/8') return pr;
-      const page = Number(new URL(`https://github.com/${endpoint}`).searchParams.get('page'));
-      return comments.slice((page - 1) * 100, page * 100);
+      assert.fail(`Unexpected GitHub read: ${endpoint}`);
     }
     if (failWrite) throw new Error('GitHub denied comment access');
     calls.push({ method, endpoint, body });
@@ -39,22 +38,38 @@ test('Air publisher posts findings and no-findings output with the reviewed SHA 
   assert.ok(!calls[0].body.body.includes('[Automation run]'));
 });
 
-test('Air publisher paginates and updates only a bot-owned review marker', async () => {
+test('each review run appends a new comment, including reruns on the same SHA, preserving history', async () => {
   const comments = [
-    { id: 1, user: { type: 'User' }, body: marker },
-    ...Array.from({ length: 99 }, (_, id) => ({ id: id + 10, user: { type: 'Bot' }, body: 'Other comment' })),
-    { id: 2, user: { type: 'Bot' }, body: `${marker}\nOld review` },
+    { id: 1, body: `${marker}\nOld review` },
+    { id: 2, body: 'Human discussion' },
   ];
-  const { calls, reads } = await publish({ REVIEW_MESSAGE: 'Updated review' }, comments);
-  assert.equal(calls[0].method, 'PATCH');
-  assert.equal(calls[0].endpoint, 'repos/owner/repo/issues/comments/2');
-  assert.ok(calls[0].body.body.includes('Updated review'));
-  assert.ok(reads.some((path) => path.endsWith('page=2')));
+  const originals = structuredClone(comments);
+  const urls: string[] = [];
+  for (const [index, head] of [sha, sha, 'b'.repeat(40)].entries()) {
+    const result = await runPublisher({
+      REVIEW_REPOSITORY: 'owner/repo', PR_NUMBER: '8', PR_HEAD_SHA: head,
+      REVIEW_RESULT: 'success', REVIEW_MESSAGE: `Review run ${index + 1}`,
+    }, async (method: string, endpoint: string, body: any) => {
+      if (method === 'GET' && endpoint === 'repos/owner/repo/pulls/8') return { state: 'open', head: { sha: head } };
+      assert.equal(method, 'POST', 'past reviews must never be edited');
+      assert.equal(endpoint, 'repos/owner/repo/issues/8/comments');
+      const id = comments.length + 1;
+      comments.push({ id, body: body.body });
+      return { html_url: `https://github.com/owner/repo/pull/8#issuecomment-${id}` };
+    });
+    urls.push(result.html_url);
+    assert.ok(comments.at(-1)!.body.includes(`Review run ${index + 1}`));
+    assert.ok(comments.at(-1)!.body.includes(head));
+  }
+  assert.equal(comments.length, 5);
+  assert.equal(new Set(urls).size, 3);
+  assert.deepEqual(comments.slice(0, 2), originals);
 });
 
 test('failed generation and empty output publish failure notices', async () => {
   for (const env of [{ REVIEW_RESULT: 'failure', REVIEW_MESSAGE: 'Partial review' }, { REVIEW_MESSAGE: ' ' }]) {
     const { calls } = await publish(env);
+    assert.equal(calls[0].method, 'POST');
     assert.match(calls[0].body.body, /did not complete/);
     assert.ok(!calls[0].body.body.includes('Partial review'));
   }
@@ -71,9 +86,26 @@ test('publisher rejects invalid targets and bounds oversized reviews', async () 
 
 test('closed PRs and superseded commits are skipped and publication failures propagate without retry', async () => {
   for (const pr of [{ state: 'closed', head: { sha } }, { state: 'open', head: { sha: 'b'.repeat(40) } }]) {
-    const { calls, result } = await publish({}, [], pr);
+    const { calls, result } = await publish({}, pr);
     assert.deepEqual(result, { skipped: true });
     assert.equal(calls.length, 0);
   }
-  await assert.rejects(publish({}, [], undefined, true), /denied comment access/);
+  await assert.rejects(publish({}, undefined, true), /denied comment access/);
+});
+
+
+test('structured clean markers require a successful nonempty untruncated review', async () => {
+  for (const env of [
+    { REVIEW_RESULT: 'success', REVIEW_MESSAGE: 'No actionable findings.', expected: 'clean' },
+    { REVIEW_RESULT: 'failure', REVIEW_MESSAGE: 'Incomplete', expected: 'failed' },
+    { REVIEW_RESULT: 'success', REVIEW_MESSAGE: ' ', expected: 'failed' },
+    { REVIEW_RESULT: 'success', REVIEW_MESSAGE: 'x'.repeat(60001), expected: 'failed' },
+  ]) {
+    let body = '';
+    await publishReview({ context: { repo: { owner: 'owner', repo: 'repo' } },
+      env: { PR_NUMBER: '8', PR_HEAD_SHA: sha, REVIEW_OUTCOME: 'clean', ...env },
+      github: { rest: { pulls: { get: async () => ({ data: { state: 'open', head: { sha } } }) },
+        issues: { createComment: async (params: any) => { body = params.body; return { html_url: 'https://github.com/owner/repo/pull/8#issuecomment-1' }; } } } } });
+    assert.match(body, new RegExp(`Commit: ${sha}\\n\\n<!-- air-review:${env.expected} -->`));
+  }
 });
