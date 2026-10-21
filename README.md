@@ -1,3 +1,7 @@
+
+
+https://github.com/user-attachments/assets/b0670cdf-cbe6-45eb-bb60-60d98183efdb
+
 <div align="center">
 
 # 🌸 Skill Garden
@@ -11,6 +15,8 @@ Discover, read, and reuse AI agent skills from GitHub repositories and organizat
 No watering required.
 
 </div>
+
+https://github.com/user-attachments/assets/9ba3ab5b-7e74-4794-a2c8-fb6761654016
 
 A skill is a `SKILL.md` file containing instructions for an AI agent. Skill Garden brings those files together so you can see what an agent can do, understand its instructions, and find ideas for your own workflows.
 
